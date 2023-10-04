@@ -24,6 +24,7 @@ func PanicRecoveryMiddleware(next http.Handler) http.Handler {
 			if err := recover(); err != nil {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				log.Println(string(debug.Stack()))
+				return
 			}
 		}()
 		next.ServeHTTP(w, req)
@@ -31,6 +32,7 @@ func PanicRecoveryMiddleware(next http.Handler) http.Handler {
 }
 
 var disallowWithoutAuthList []*regexp.Regexp = []*regexp.Regexp{
+	regexp.MustCompile(".*/api/v1/health.*"),
 	//regexp.MustCompile(".*/api/v1/user.*"),
 	//regexp.MustCompile(".*/api/v1/chat.*"),
 	//regexp.MustCompile(".*/api/v1/card.*"),

@@ -9,14 +9,12 @@ import (
 )
 
 func HealthHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	result, err := json.Marshal(map[string]string{"data": "backend is alive."})
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
 	w.Write(result)
 }
 
@@ -60,7 +58,6 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			w.WriteHeader(http.StatusOK)
 			return
 		} else {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -104,7 +101,6 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		})
 		CookieToUserMap[cookiePass] = tmp.Login
 		UserToCookieMap[tmp.Login] = cookiePass
-		w.WriteHeader(http.StatusOK)
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
 	}
@@ -127,7 +123,6 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		w.WriteHeader(http.StatusOK)
 		return
 	}
 	w.WriteHeader(http.StatusInternalServerError)

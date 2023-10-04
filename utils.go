@@ -101,7 +101,7 @@ func GetUserByCookie(r *http.Request) (User, error) {
 
 func CheckCardOwner(r *http.Request) bool {
 	vars := mux.Vars(r)
-	id := vars["id"]
+	id, _ := strconv.Atoi(vars["id"])
 	u, _ := GetUserByCookie(r)
 	c, _ := GetCard(db, id)
 	if u.ID == c.UID {
