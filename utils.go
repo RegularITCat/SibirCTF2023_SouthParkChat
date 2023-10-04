@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
+	"github.com/gorilla/mux"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -69,4 +71,42 @@ func GetUser(db *sql.DB, username string) (User, error) {
 		}
 	}
 	return user, nil
+}
+func GetCard(db *sql.DB, id int) (Card, error) {
+	getCardSQL := fmt.Sprintf("SELECT * FROM cards WHERE id='%v';", strconv.Itoa(id))
+	rows, err := db.Query(getCardSQL)
+	var card Card
+	for rows.Next() {
+		err = rows.Scan(&card.ID, &card.UID, &card.Comment, &card.Balance, &card.CreationTimestamp, &card.LastTransaction)
+		if err != nil {
+			return card, err
+		}
+	}
+	return card, nil
+}
+
+func GetUserByCookie(r *http.Request) (User, error) {
+	c, err := r.Cookie("token")
+	if err != nil {
+		return User{}, NoCookie
+	}
+	tknStr := c.Value
+	u, ok := CookieToUserMap[tknStr]
+	if ok {
+		result, err := GetUser(db, u)
+		return result, err
+	}
+	return User{}, NoCookie
+}
+
+func CheckCardOwner(r *http.Request) bool {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	u, _ := GetUserByCookie(r)
+	c, _ := GetCard(db, id)
+	if u.ID == c.UID {
+		return true
+	} else {
+		return false
+	}
 }

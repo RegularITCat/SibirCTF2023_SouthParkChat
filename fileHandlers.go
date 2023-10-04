@@ -2,6 +2,8 @@ package main
 
 import "net/http"
 
+//do i really need files in service?
+
 func GetFiles(w http.ResponseWriter, r *http.Request) {
 }
 

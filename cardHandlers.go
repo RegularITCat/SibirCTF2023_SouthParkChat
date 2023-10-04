@@ -41,6 +41,10 @@ func GetCards(w http.ResponseWriter, r *http.Request) {
 func GetCardByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
+	if !CheckCardOwner(r) {
+		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+		return
+	}
 	rows, err := db.Query(fmt.Sprintf("SELECT * FROM card WHERE id = %v", id))
 	if err != nil {
 		log.Println(err)
@@ -86,6 +90,10 @@ func CreateCard(w http.ResponseWriter, r *http.Request) {
 func UpdateCard(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
+	if !CheckCardOwner(r) {
+		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+		return
+	}
 	var tmp Card
 	err := json.NewDecoder(r.Body).Decode(&tmp)
 	if err != nil {

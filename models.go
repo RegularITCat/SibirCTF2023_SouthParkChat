@@ -19,23 +19,23 @@ type Chat struct {
 }
 
 type ChatUsers struct {
-	ID             int    `json:"id,omitempty"`
-	CID            string `json:"cid,omitempty"`
-	UID            string `json:"uid,omitempty"`
-	EntryTimestamp int64  `json:"entry_timestamp,omitempty"`
+	ID             int   `json:"id,omitempty"`
+	CID            int   `json:"cid,omitempty"`
+	UID            int   `json:"uid,omitempty"`
+	EntryTimestamp int64 `json:"entry_timestamp,omitempty"`
 }
 
 type Message struct {
 	ID        int    `json:"id,omitempty"`
-	CID       string `json:"cid,omitempty"`
-	UID       string `json:"rid,omitempty"`
+	CID       int    `json:"cid,omitempty"`
+	UID       int    `json:"rid,omitempty"`
 	Message   string `json:"message,omitempty"`
 	Timestamp int64  `json:"timestamp,omitempty"`
 }
 
 type Card struct {
 	ID                int     `json:"id,omitempty"`
-	UID               string  `json:"uid,omitempty"`
+	UID               int     `json:"uid,omitempty"`
 	Comment           string  `json:"comment,omitempty"`
 	Balance           float64 `json:"balance,omitempty"`
 	CreationTimestamp int64   `json:"creation_timestamp,omitempty"`
@@ -44,8 +44,8 @@ type Card struct {
 
 type Transaction struct {
 	ID        int     `json:"id,omitempty"`
-	FromCard  string  `json:"from_card,omitempty"`
-	ToCard    string  `json:"to_card,omitempty"`
+	FromCard  int     `json:"from_card,omitempty"`
+	ToCard    int     `json:"to_card,omitempty"`
 	Amount    float64 `json:"amount,omitempty"`
 	Comment   string  `json:"comment,omitempty"`
 	Timestamp int64   `json:"timestamp,omitempty"`
