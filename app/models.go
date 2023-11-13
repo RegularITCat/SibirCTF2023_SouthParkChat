@@ -16,6 +16,7 @@ type Chat struct {
 	Name             string `json:"name,omitempty"`
 	Description      string `json:"description,omitempty"`
 	CreatedTimestamp int64  `json:"created_timestamp,omitempty"`
+	AdminID          int    `json:"admin_id,omitempty"`
 }
 
 type ChatUsers struct {
