@@ -5,9 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
-
-	"github.com/gorilla/mux"
 )
 
 func GetUsers(w http.ResponseWriter, r *http.Request) {
@@ -37,16 +34,16 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 	w.Write(result)
 }
 
-func GetUserByID(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-	rows, err := db.Query(fmt.Sprintf("SELECT * FROM users WHERE id = %v", id))
+func GetMyUser(w http.ResponseWriter, r *http.Request) {
+	c, _ := r.Cookie("token")
+	username := CookieToUserMap[c.Value]
+	user, _ := GetUser(db, username)
+	rows, err := db.Query(fmt.Sprintf("SELECT * FROM users WHERE id = %v", user.ID))
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	var user User
 	for rows.Next() {
 		err = rows.Scan(&user.ID, &user.Login, &user.Password, &user.FirstName, &user.SecondName, &user.RegistrationTimestamp, &user.LoginTimestamp, &user.Status)
 		if err != nil {
@@ -65,20 +62,39 @@ func GetUserByID(w http.ResponseWriter, r *http.Request) {
 	w.Write(result)
 }
 
-func UpdateUser(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
+func UpdateMyUser(w http.ResponseWriter, r *http.Request) {
+	c, _ := r.Cookie("token")
+	username := CookieToUserMap[c.Value]
+	user, _ := GetUser(db, username)
 	var tmp User
 	err := json.NewDecoder(r.Body).Decode(&tmp)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	tmp.ID, err = strconv.Atoi(id)
-	_, err = db.Query(fmt.Sprintf("UPDATE users SET login='%v',first_name='%v',second_name='%v' WHERE id='%v';", tmp.Login, tmp.FirstName, tmp.SecondName))
+	_, err = db.Query(fmt.Sprintf("UPDATE users SET login='%v',first_name='%v',second_name='%v' WHERE id='%v';", tmp.Login, tmp.FirstName, tmp.SecondName, user.ID))
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	tkn := UserToCookieMap[user.Login]
+	delete(CookieToUserMap, user.Login)
+	delete(UserToCookieMap, tkn)
+	CookieToUserMap[tkn] = tmp.Login
+	UserToCookieMap[tmp.Login] = tkn
+	w.WriteHeader(http.StatusOK)
+}
+
+func DeleteMyUser(w http.ResponseWriter, r *http.Request) {
+	c, _ := r.Cookie("token")
+	username := CookieToUserMap[c.Value]
+	user, _ := GetUser(db, username)
+	err := DeleteMyUserInDB(user.ID)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }

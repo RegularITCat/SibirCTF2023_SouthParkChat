@@ -56,7 +56,7 @@ func CreateDB(path string) (*sql.DB, error) {
 	}
 	if count == 0 {
 		_, _ = sqlDB.Exec(
-			fmt.Sprintf("INSERT INTO users (id, login, password, registration_timestamp, status) VALUES (%v, '%v', '%v', %v, 'offline');", 0, "admin", "admin", timestamp),
+			fmt.Sprintf("INSERT INTO users (id, login, password, first_name, second_name, registration_timestamp, status) VALUES (%v, '%v', '%v', '%v', '%v', %v, 'offline');", 0, "admin", "admin", "admin", "admin", timestamp),
 		)
 	}
 	sqlDB.Exec("UPDATE users SET status = 'offline'")
@@ -120,4 +120,26 @@ func CheckUserInDB(userID, chatID int) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func DeleteMyUserInDB(userID int) error {
+	_, err := db.Exec(fmt.Sprintf("DELETE FROM users WHERE id = %v;", userID))
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec(fmt.Sprintf("DELETE FROM chats WHERE admin_id = %v;", userID))
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec(fmt.Sprintf("DELETE FROM chat_users WHERE uid = %v;", userID))
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec(fmt.Sprintf("DELETE FROM cards WHERE uid = %v;", userID))
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec(fmt.Sprintf("DELETE FROM messages WHERE uid = %v;", userID))
+
+	return err
 }
