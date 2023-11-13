@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 )
 
 func HealthHandler(w http.ResponseWriter, r *http.Request) {
@@ -27,13 +26,13 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	c, err := CountUser(db, tmp.Login)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	if c == 1 {
 		res, err := GetUser(db, tmp.Login)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 		if res.Password == tmp.Password {
@@ -54,8 +53,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			})
 			_, err = db.Exec(fmt.Sprintf("UPDATE users SET status = 'online' WHERE login = '%v';", tmp.Login))
 			if err != nil {
-				log.Println(err)
-				w.WriteHeader(http.StatusInternalServerError)
+				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
 			return
@@ -64,10 +62,9 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-
 }
 
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
@@ -83,9 +80,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if c == 0 {
-		insertUserSQL := fmt.Sprintf("INSERT INTO users (login, password, first_name, second_name, registration_timestamp, login_timestamp, status) VALUES ('%v', '%v', '%v', '%v', '%v', '%v', '%v');", tmp.Login, tmp.Password, tmp.FirstName, tmp.SecondName, time.Now().Unix(), time.Now().Unix(), "online")
-		_, err := db.Exec(insertUserSQL)
-
+		err = CreateUser(tmp.Login, tmp.Password, tmp.FirstName, tmp.SecondName)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Println(err)

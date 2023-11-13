@@ -12,8 +12,22 @@ import (
 )
 
 func GetMessages(w http.ResponseWriter, r *http.Request) {
-	var messages []Message
-	rows, err := db.Query("SELECT id,cid,uid,message,timestamp FROM messages;")
+	c, _ := r.Cookie("token")
+	username := CookieToUserMap[c.Value]
+	user, _ := GetUser(db, username)
+	vars := mux.Vars(r)
+	cid, err := strconv.Atoi(vars["cid"])
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	isIn, err := CheckUserInDB(user.ID, cid)
+	if !isIn {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	messages := make([]Message, 0)
+	rows, err := db.Query(fmt.Sprintf("SELECT id,cid,uid,message,timestamp FROM messages WHERE cid=%v;", cid))
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -38,42 +52,28 @@ func GetMessages(w http.ResponseWriter, r *http.Request) {
 	w.Write(result)
 }
 
-func GetMessageByID(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-	rows, err := db.Query(fmt.Sprintf("SELECT * FROM messages WHERE id = %v", id))
-	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	var message Message
-	for rows.Next() {
-		err = rows.Scan(&message.ID, &message.CID, &message.UID, &message.Message, &message.Timestamp)
-		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-	}
-	result, err := json.Marshal(message)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-	w.Write(result)
-}
-
 func CreateMessage(w http.ResponseWriter, r *http.Request) {
-	var tmp Message
-	err := json.NewDecoder(r.Body).Decode(&tmp)
+	c, _ := r.Cookie("token")
+	username := CookieToUserMap[c.Value]
+	user, _ := GetUser(db, username)
+	vars := mux.Vars(r)
+	cid, err := strconv.Atoi(vars["cid"])
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	_, err = db.Exec(fmt.Sprintf("INSERT INTO messages (cid, uid, message, timestamp) VALUES ('%v', '%v', %v, %v);", tmp.CID, tmp.UID, tmp.Message, time.Now().Unix()))
+	isIn, err := CheckUserInDB(user.ID, cid)
+	if !isIn {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	var tmp Message
+	err = json.NewDecoder(r.Body).Decode(&tmp)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	_, err = db.Exec(fmt.Sprintf("INSERT INTO messages (cid, uid, message, timestamp) VALUES (%v, %v, '%v', %v);", cid, user.ID, tmp.Message, time.Now().Unix()))
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -84,27 +84,62 @@ func CreateMessage(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateMessage(w http.ResponseWriter, r *http.Request) {
+	c, _ := r.Cookie("token")
+	username := CookieToUserMap[c.Value]
+	user, _ := GetUser(db, username)
 	vars := mux.Vars(r)
-	id := vars["id"]
-	var tmp Message
-	err := json.NewDecoder(r.Body).Decode(&tmp)
+	cid, err := strconv.Atoi(vars["cid"])
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	tmp.ID, err = strconv.Atoi(id)
-	_, err = db.Query(fmt.Sprintf("UPDATE messages SET message='%v' WHERE id='%v';", tmp.Message, tmp.ID))
+	mid, err := strconv.Atoi(vars["mid"])
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	isIn, err := CheckUserInDB(user.ID, cid)
+	if !isIn {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	var tmp Message
+	err = json.NewDecoder(r.Body).Decode(&tmp)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	_, err = db.Query(fmt.Sprintf("UPDATE messages SET message='%v' WHERE id=%v AND uid=%v AND cid=%v;", tmp.Message, mid, user.ID, cid))
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	w.WriteHeader(http.StatusOK)
+	return
 }
 
 func DeleteMessage(w http.ResponseWriter, r *http.Request) {
+	c, _ := r.Cookie("token")
+	username := CookieToUserMap[c.Value]
+	user, _ := GetUser(db, username)
 	vars := mux.Vars(r)
-	id := vars["id"]
-	_, err := db.Exec(fmt.Sprintf("DELETE FROM messages WHERE id = '%v';", id))
+	cid, err := strconv.Atoi(vars["cid"])
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	mid, err := strconv.Atoi(vars["mid"])
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	isIn, err := CheckUserInDB(user.ID, cid)
+	if !isIn {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	_, err = db.Exec(fmt.Sprintf("DELETE FROM messages WHERE id = %v AND cid=%v AND uid=%v;", mid, cid, user.ID))
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)

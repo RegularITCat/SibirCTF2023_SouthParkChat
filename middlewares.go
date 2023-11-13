@@ -33,13 +33,13 @@ func PanicRecoveryMiddleware(next http.Handler) http.Handler {
 
 var disallowWithoutAuthList []*regexp.Regexp = []*regexp.Regexp{
 	regexp.MustCompile(".*/api/v1/health.*"),
-	//regexp.MustCompile(".*/api/v1/user.*"),
-	//regexp.MustCompile(".*/api/v1/chat.*"),
-	//regexp.MustCompile(".*/api/v1/card.*"),
-	//regexp.MustCompile(".*/api/v1/[0-9]+/msg.*"),
-	//regexp.MustCompile(".*/api/v1/file.*"),
-	//regexp.MustCompile(".*/api/v1/transaction.*"),
-	//regexp.MustCompile(".*/api/v1/[0-9]+/post.*"),
+	regexp.MustCompile(".*/api/v1/user.*"),
+	regexp.MustCompile(".*/api/v1/chat.*"),
+	regexp.MustCompile(".*/api/v1/card.*"),
+	regexp.MustCompile(".*/api/v1/[0-9]+/msg.*"),
+	regexp.MustCompile(".*/api/v1/file.*"),
+	regexp.MustCompile(".*/api/v1/transaction.*"),
+	regexp.MustCompile(".*/api/v1/[0-9]+/post.*"),
 }
 
 func AuthCheckMiddleware(next http.Handler) http.Handler {
@@ -56,6 +56,7 @@ func AuthCheckMiddleware(next http.Handler) http.Handler {
 				_, ok := CookieToUserMap[tknStr]
 				if ok {
 					next.ServeHTTP(w, req)
+					return
 				} else {
 					http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 					return
