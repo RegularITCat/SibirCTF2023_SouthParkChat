@@ -12,7 +12,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.Query("SELECT id, first_name, second_name FROM users;")
 	if err != nil {
 		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 	for rows.Next() {
@@ -20,14 +20,14 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 		err = rows.Scan(&user.ID, &user.FirstName, &user.SecondName)
 		if err != nil {
 			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 		users = append(users, user)
 	}
 	result, err := json.Marshal(users)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -41,21 +41,21 @@ func GetMyUser(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.Query(fmt.Sprintf("SELECT * FROM users WHERE id = %v", user.ID))
 	if err != nil {
 		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 	for rows.Next() {
 		err = rows.Scan(&user.ID, &user.Login, &user.Password, &user.FirstName, &user.SecondName, &user.RegistrationTimestamp, &user.LoginTimestamp, &user.Status)
 		if err != nil {
 			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 
 	}
 	result, err := json.Marshal(user)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -69,13 +69,13 @@ func UpdateMyUser(w http.ResponseWriter, r *http.Request) {
 	var tmp User
 	err := json.NewDecoder(r.Body).Decode(&tmp)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 	_, err = db.Query(fmt.Sprintf("UPDATE users SET login='%v',first_name='%v',second_name='%v' WHERE id='%v';", tmp.Login, tmp.FirstName, tmp.SecondName, user.ID))
 	if err != nil {
 		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 	tkn := UserToCookieMap[user.Login]
@@ -93,7 +93,7 @@ func DeleteMyUser(w http.ResponseWriter, r *http.Request) {
 	err := DeleteMyUserInDB(user.ID)
 	if err != nil {
 		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

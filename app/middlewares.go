@@ -13,7 +13,7 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 		start := time.Now()
 		next.ServeHTTP(w, req)
 		if req.RequestURI != "/api/health" {
-			log.Printf("%s %s %s", req.Method, req.RequestURI, time.Since(start))
+			log.Printf("%s %s %s %s", req.Method, req.RequestURI, req.Proto, time.Since(start))
 		}
 	})
 }

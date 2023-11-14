@@ -17,7 +17,7 @@ func CreateDB(path string) (*sql.DB, error) {
 	_, _ = sqlDB.Exec("CREATE TABLE IF NOT EXISTS users (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, login TEXT NOT NULL, password TEXT NOT NULL, first_name TEXT, second_name TEXT, registration_timestamp INTEGER NOT NULL, login_timestamp INTEGER, status TEXT);")
 	_, _ = sqlDB.Exec("CREATE TABLE IF NOT EXISTS chats (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, description TEXT, created_timestamp INTEGER NOT NULL, admin_id INTEGER NOT NULL);")
 	_, _ = sqlDB.Exec("CREATE TABLE IF NOT EXISTS messages (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, cid INTEGER NOT NULL, uid INTEGER NOT NULL, message TEXT NOT NULL, timestamp INTEGER NOT NULL);")
-	_, _ = sqlDB.Exec("CREATE TABLE IF NOT EXISTS cards (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, uid INTEGER NOT NULL, comment TEXT, balance REAL NOT NULL, creation_timestamp INTEGER NOT NULL, last_transaction INTEGER);")
+	_, _ = sqlDB.Exec("CREATE TABLE IF NOT EXISTS cards (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, uid INTEGER NOT NULL, comment TEXT, balance REAL NOT NULL, creation_timestamp INTEGER NOT NULL, last_transaction INTEGER NOT NULL);")
 	_, _ = sqlDB.Exec("CREATE TABLE IF NOT EXISTS transactions (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, from_card INTEGER NOT NULL, to_card INTEGER NOT NULL, amount REAL NOT NULL, comment TEXT, timestamp INTEGER NOT NULL);")
 	_, _ = sqlDB.Exec("CREATE TABLE IF NOT EXISTS chat_users (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, cid INTEGER NOT NULL, uid INTEGER NOT NULL, entry_timestamp INTEGER NOT NULL);")
 	_, _ = sqlDB.Exec("CREATE TABLE IF NOT EXISTS files (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, path TEXT NOT NULL, upload_timestamp INTEGER NOT NULL);")
@@ -59,7 +59,7 @@ func CreateDB(path string) (*sql.DB, error) {
 			fmt.Sprintf("INSERT INTO users (id, login, password, first_name, second_name, registration_timestamp, status) VALUES (%v, '%v', '%v', '%v', '%v', %v, 'offline');", 0, "admin", "admin", "admin", "admin", timestamp),
 		)
 	}
-	sqlDB.Exec("UPDATE users SET status = 'offline'")
+	sqlDB.Exec("UPDATE users SET status = 'offline';")
 	return sqlDB, nil
 }
 
@@ -81,19 +81,20 @@ func CreateUser(login, password, firstName, secondName string) error {
 	}
 	uid, _ := result.LastInsertId()
 	insertCardSQL := fmt.Sprintf(
-		"INSERT INTO cards (uid, comment, balance, creation_timestamp) VALUES (%v, '%v', %v, '%v')",
+		"INSERT INTO cards (uid, comment, balance, creation_timestamp, last_transaction) VALUES (%v, '%v', %v, '%v', %v);",
 		uid,
 		fmt.Sprintf("user %v default card", login),
 		//TODO when date is come, stop giving money for free
 		100.0,
 		timestamp,
+		0,
 	)
 	_, err = db.Exec(insertCardSQL)
 	if err != nil {
 		return err
 	}
 	insertChatUsersSQL := fmt.Sprintf(
-		"INSERT INTO chat_users (cid, uid, entry_timestamp) VALUES ('%v', '%v', '%v')",
+		"INSERT INTO chat_users (cid, uid, entry_timestamp) VALUES ('%v', '%v', '%v');",
 		1,
 		uid,
 		timestamp,
@@ -103,7 +104,7 @@ func CreateUser(login, password, firstName, secondName string) error {
 }
 
 func CheckUserInDB(userID, chatID int) (bool, error) {
-	rows, err := db.Query(fmt.Sprintf("SELECT count(*) FROM chat_users WHERE cid=%v AND uid=%v", chatID, userID))
+	rows, err := db.Query(fmt.Sprintf("SELECT count(*) FROM chat_users WHERE cid=%v AND uid=%v;", chatID, userID))
 	if err != nil {
 		log.Println(err)
 		return false, err
@@ -140,6 +141,5 @@ func DeleteMyUserInDB(userID int) error {
 		return err
 	}
 	_, err = db.Exec(fmt.Sprintf("DELETE FROM messages WHERE uid = %v;", userID))
-
 	return err
 }
