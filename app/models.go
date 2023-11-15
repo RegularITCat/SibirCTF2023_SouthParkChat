@@ -58,3 +58,11 @@ type File struct {
 	Path            string `json:"path,omitempty"`
 	UploadTimestamp int64  `json:"upload_timestamp,omitempty"`
 }
+
+type Post struct {
+	ID                int    `json:"id,omitempty"`
+	UID               int    `json:"uid,omitempty"`
+	Name              string `json:"name,omitempty"`
+	Content           string `json:"content,omitempty"`
+	CreationTimestamp int64  `json:"creation_timestamp,omitempty"`
+}
