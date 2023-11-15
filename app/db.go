@@ -197,3 +197,64 @@ func DeleteCard(userID, id int) error {
 	_, err := db.Exec(fmt.Sprintf("DELETE FROM cards WHERE id=%v AND uid=%v;", id, userID))
 	return err
 }
+
+func GetChats(userID int) ([]Chat, error) {
+	chats := make([]Chat, 0)
+	rows, err := db.Query(fmt.Sprintf("SELECT chats.id, chats.name, chats.description, chats.created_timestamp FROM chats INNER JOIN chat_users ON chats.id = chat_users.cid WHERE chat_users.uid = %v;", userID))
+	defer rows.Close()
+	if err != nil {
+		return chats, err
+	}
+	for rows.Next() {
+		var chat Chat
+		err = rows.Scan(&chat.ID, &chat.Name, &chat.Description, &chat.CreatedTimestamp)
+		if err != nil {
+			return chats, err
+		}
+		chats = append(chats, chat)
+	}
+	return chats, err
+}
+
+func GetChat(id, userID int) (Chat, error) {
+	var chat Chat
+	rows, err := db.Query(fmt.Sprintf("SELECT chats.id, chats.name, chats.description, chats.created_timestamp FROM chats INNER JOIN chat_users ON chats.id = chat_users.cid WHERE chats.id = %v AND chat_users.uid = %v;", id, userID))
+	if err != nil {
+		return chat, err
+	}
+	for rows.Next() {
+		err = rows.Scan(&chat.ID, &chat.Name, &chat.Description, &chat.CreatedTimestamp)
+		if err != nil {
+			return chat, err
+		}
+	}
+	return chat, nil
+}
+
+func CreateChat(userID int, name, description string) (int, error) {
+	timestamp := time.Now().Unix()
+	result, err := db.Exec(fmt.Sprintf("INSERT INTO chats (name, description, created_timestamp, admin_id) VALUES ('%v', '%v', %v, %v);", name, description, timestamp, userID))
+	if err != nil {
+		return 0, err
+	}
+	cid, err := result.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	_, err = db.Exec(fmt.Sprintf("INSERT INTO chat_users (cid, uid, entry_timestamp) VALUES (%v, %v, %v);", cid, userID, timestamp))
+	return int(cid), err
+}
+
+func UpdateChat(id, userID int, name, description string) error {
+	_, err := db.Query(fmt.Sprintf("UPDATE chats SET name='%v',description='%v' WHERE id='%v' AND admin_id = %v;", name, description, id, userID))
+	return err
+}
+
+func DeleteChat(id, userID int) error {
+	_, err := db.Exec(fmt.Sprintf("DELETE FROM chats WHERE id = %v AND admin_id=%v;", id, userID))
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec(fmt.Sprintf("DELETE FROM chat_users WHERE cid = %v;", id))
+	return err
+}
