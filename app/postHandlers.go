@@ -10,7 +10,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func GetPosts(w http.ResponseWriter, r *http.Request) {
+func GetPostsHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var err error
 	var page, pageSize int
@@ -54,7 +54,7 @@ func GetPosts(w http.ResponseWriter, r *http.Request) {
 	w.Write(resultJSON)
 }
 
-func GetPostByID(w http.ResponseWriter, r *http.Request) {
+func GetPostHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
@@ -80,7 +80,7 @@ func GetPostByID(w http.ResponseWriter, r *http.Request) {
 	w.Write(resultJSON)
 }
 
-func UpdatePost(w http.ResponseWriter, r *http.Request) {
+func UpdatePostHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := GetUserByCookie(r)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
@@ -97,7 +97,7 @@ func UpdatePost(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func DeletePost(w http.ResponseWriter, r *http.Request) {
+func DeletePostHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := GetUserByCookie(r)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
@@ -114,7 +114,7 @@ func DeletePost(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func CreatePost(w http.ResponseWriter, r *http.Request) {
+func CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := GetUserByCookie(r)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)

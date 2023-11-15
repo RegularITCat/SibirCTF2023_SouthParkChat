@@ -10,7 +10,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func GetChats(w http.ResponseWriter, r *http.Request) {
+func GetChatsHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := GetUserByCookie(r)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
@@ -36,7 +36,7 @@ func GetChats(w http.ResponseWriter, r *http.Request) {
 	w.Write(result)
 }
 
-func GetChatByID(w http.ResponseWriter, r *http.Request) {
+func GetChatHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := GetUserByCookie(r)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
@@ -63,7 +63,7 @@ func GetChatByID(w http.ResponseWriter, r *http.Request) {
 	w.Write(result)
 }
 
-func CreateChat(w http.ResponseWriter, r *http.Request) {
+func CreateChatHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := GetUserByCookie(r)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
@@ -94,7 +94,7 @@ func CreateChat(w http.ResponseWriter, r *http.Request) {
 	w.Write(resultJson)
 }
 
-func UpdateChat(w http.ResponseWriter, r *http.Request) {
+func UpdateChatHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := GetUserByCookie(r)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
@@ -114,7 +114,7 @@ func UpdateChat(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func DeleteChatByID(w http.ResponseWriter, r *http.Request) {
+func DeleteChatHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := GetUserByCookie(r)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)

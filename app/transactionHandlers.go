@@ -11,7 +11,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func GetTransactions(w http.ResponseWriter, r *http.Request) {
+func GetTransactionsHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	cid, err := strconv.Atoi(vars["cid"])
 	if err != nil {
@@ -43,7 +43,7 @@ func GetTransactions(w http.ResponseWriter, r *http.Request) {
 	w.Write(result)
 }
 
-func GetTransactionByID(w http.ResponseWriter, r *http.Request) {
+func GetTransactionHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
@@ -74,7 +74,7 @@ func GetTransactionByID(w http.ResponseWriter, r *http.Request) {
 	w.Write(result)
 }
 
-func CreateTransaction(w http.ResponseWriter, r *http.Request) {
+func CreateTransactionHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	cid, err := strconv.Atoi(vars["cid"])
 	if err != nil {

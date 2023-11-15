@@ -10,7 +10,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func GetMessages(w http.ResponseWriter, r *http.Request) {
+func GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := GetUserByCookie(r)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
@@ -50,7 +50,7 @@ func GetMessages(w http.ResponseWriter, r *http.Request) {
 	w.Write(result)
 }
 
-func CreateMessage(w http.ResponseWriter, r *http.Request) {
+func CreateMessageHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := GetUserByCookie(r)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
@@ -89,7 +89,7 @@ func CreateMessage(w http.ResponseWriter, r *http.Request) {
 	w.Write(resultJson)
 }
 
-func UpdateMessage(w http.ResponseWriter, r *http.Request) {
+func UpdateMessageHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := GetUserByCookie(r)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
@@ -123,7 +123,7 @@ func UpdateMessage(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func DeleteMessage(w http.ResponseWriter, r *http.Request) {
+func DeleteMessageHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := GetUserByCookie(r)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)

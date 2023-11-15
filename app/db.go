@@ -144,3 +144,56 @@ func DeleteMyUserInDB(userID int) error {
 	_, err = db.Exec(fmt.Sprintf("DELETE FROM messages WHERE uid = %v;", userID))
 	return err
 }
+
+func GetCardsByUserID(userID int) ([]Card, error) {
+	cards := make([]Card, 0)
+	rows, err := db.Query(fmt.Sprintf("SELECT id,uid,comment,balance,creation_timestamp,last_transaction FROM cards WHERE uid=%v;", userID))
+	defer rows.Close()
+	if err != nil {
+		return cards, err
+	}
+	for rows.Next() {
+		var card Card
+		err = rows.Scan(&card.ID, &card.UID, &card.Comment, &card.Balance, &card.CreationTimestamp, &card.LastTransaction)
+		if err != nil {
+			return cards, err
+		}
+		cards = append(cards, card)
+	}
+	return cards, err
+}
+
+func GetCardByUserIDAndID(userID, ID int) (Card, error) {
+	var card Card
+	rows, err := db.Query(fmt.Sprintf("SELECT id,uid,comment,balance,creation_timestamp,last_transaction FROM cards WHERE uid=%v AND id=%v;", userID, ID))
+	defer rows.Close()
+	if err != nil {
+		return card, err
+	}
+	for rows.Next() {
+		err = rows.Scan(&card.ID, &card.UID, &card.Comment, &card.Balance, &card.CreationTimestamp, &card.LastTransaction)
+		if err != nil {
+			return card, err
+		}
+	}
+	return card, err
+}
+
+func CreateCard(userID int, comment string) (int, error) {
+	result, err := db.Exec(fmt.Sprintf("INSERT INTO cards (uid, comment, balance, creation_timestamp, last_transaction) VALUES (%v, '%v', %v, %v, %v);", userID, comment, 0, time.Now().Unix(), 0))
+	if err != nil {
+		return 0, err
+	}
+	cid, err := result.LastInsertId()
+	return int(cid), err
+}
+
+func UpdateCard(userID, id int, comment string) error {
+	_, err := db.Query(fmt.Sprintf("UPDATE cards SET comment='%v' WHERE id=%v AND uid=%v;", comment, id, userID))
+	return err
+}
+
+func DeleteCard(userID, id int) error {
+	_, err := db.Exec(fmt.Sprintf("DELETE FROM cards WHERE id=%v AND uid=%v;", id, userID))
+	return err
+}

@@ -15,7 +15,7 @@ import (
 
 //do i really need files in service?
 
-func GetFiles(w http.ResponseWriter, r *http.Request) {
+func GetFilesHandler(w http.ResponseWriter, r *http.Request) {
 	files := make([]File, 0)
 	rows, err := db.Query("SELECT id,name,path,upload_timestamp FROM files;")
 	if err != nil {
@@ -37,7 +37,7 @@ func GetFiles(w http.ResponseWriter, r *http.Request) {
 	w.Write(result)
 }
 
-func GetFileByID(w http.ResponseWriter, r *http.Request) {
+func GetFileHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 	rows, err := db.Query(fmt.Sprintf("SELECT id,name,path,upload_timestamp FROM files WHERE id=%v;", id))
@@ -59,7 +59,7 @@ func GetFileByID(w http.ResponseWriter, r *http.Request) {
 	w.Write(result)
 }
 
-func UploadFile(w http.ResponseWriter, r *http.Request) {
+func UploadFileHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseMultipartForm(10 << 20)
 	file, handler, err := r.FormFile("file")
 	if err != nil {
@@ -95,7 +95,7 @@ func UploadFile(w http.ResponseWriter, r *http.Request) {
 	w.Write(resultJSON)
 }
 
-func DownloadFile(w http.ResponseWriter, r *http.Request) {
+func DownloadFileHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 	rows, err := db.Query(fmt.Sprintf("SELECT id,name,path,upload_timestamp FROM files WHERE id=%v;", id))
@@ -122,7 +122,7 @@ func DownloadFile(w http.ResponseWriter, r *http.Request) {
 	io.Copy(w, fileDescriptor)
 }
 
-func DeleteFile(w http.ResponseWriter, r *http.Request) {
+func DeleteFileHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 	rows, err := db.Query(fmt.Sprintf("SELECT id,name,path,upload_timestamp FROM files WHERE id=%v;", id))

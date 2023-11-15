@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func GetUsers(w http.ResponseWriter, r *http.Request) {
+func GetUsersHandler(w http.ResponseWriter, r *http.Request) {
 	var users []User
 	rows, err := db.Query("SELECT id, first_name, second_name FROM users;")
 	if err != nil {
@@ -28,7 +28,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 	w.Write(result)
 }
 
-func GetMyUser(w http.ResponseWriter, r *http.Request) {
+func GetUserHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := GetUserByCookie(r)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
@@ -51,7 +51,7 @@ func GetMyUser(w http.ResponseWriter, r *http.Request) {
 	w.Write(result)
 }
 
-func UpdateMyUser(w http.ResponseWriter, r *http.Request) {
+func UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := GetUserByCookie(r)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
@@ -73,7 +73,7 @@ func UpdateMyUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func DeleteMyUser(w http.ResponseWriter, r *http.Request) {
+func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := GetUserByCookie(r)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)

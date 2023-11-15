@@ -2,31 +2,20 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gorilla/mux"
 )
 
-func GetCards(w http.ResponseWriter, r *http.Request) {
+func GetCardsHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := GetUserByCookie(r)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
-	var cards []Card
-	rows, err := db.Query(fmt.Sprintf("SELECT id,uid,comment,balance,creation_timestamp,last_transaction FROM cards WHERE uid=%v;", user.ID))
+	cards, err := GetCardsByUserID(user.ID)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
-	}
-	for rows.Next() {
-		var card Card
-		err = rows.Scan(&card.ID, &card.UID, &card.Comment, &card.Balance, &card.CreationTimestamp, &card.LastTransaction)
-		if err != nil {
-			printError(w, r, err, http.StatusInternalServerError)
-		}
-		cards = append(cards, card)
 	}
 	result, err := json.Marshal(cards)
 	if err != nil {
@@ -36,7 +25,7 @@ func GetCards(w http.ResponseWriter, r *http.Request) {
 	w.Write(result)
 }
 
-func GetCardByID(w http.ResponseWriter, r *http.Request) {
+func GetCardHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := GetUserByCookie(r)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
@@ -47,17 +36,9 @@ func GetCardByID(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
-	rows, err := db.Query(fmt.Sprintf("SELECT id,uid,comment,balance,creation_timestamp,last_transaction FROM cards WHERE uid=%v AND id=%v;", user.ID, id))
+	card, err := GetCardByUserIDAndID(user.ID, id)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
-	}
-	var card Card
-	for rows.Next() {
-		err = rows.Scan(&card.ID, &card.UID, &card.Comment, &card.Balance, &card.CreationTimestamp, &card.LastTransaction)
-		if err != nil {
-			printError(w, r, err, http.StatusInternalServerError)
-		}
-
 	}
 	result, err := json.Marshal(card)
 	if err != nil {
@@ -67,7 +48,7 @@ func GetCardByID(w http.ResponseWriter, r *http.Request) {
 	w.Write(result)
 }
 
-func CreateCard(w http.ResponseWriter, r *http.Request) {
+func CreateCardHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := GetUserByCookie(r)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
@@ -77,11 +58,7 @@ func CreateCard(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
-	result, err := db.Exec(fmt.Sprintf("INSERT INTO cards (uid, comment, balance, creation_timestamp, last_transaction) VALUES (%v, '%v', %v, %v, %v);", user.ID, tmp.Comment, 0, time.Now().Unix(), 0))
-	if err != nil {
-		printError(w, r, err, http.StatusInternalServerError)
-	}
-	cid, err := result.LastInsertId()
+	cid, err := CreateCard(user.ID, tmp.Comment)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
@@ -90,7 +67,7 @@ func CreateCard(w http.ResponseWriter, r *http.Request) {
 	w.Write(resultJson)
 }
 
-func UpdateCard(w http.ResponseWriter, r *http.Request) {
+func UpdateCardHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := GetUserByCookie(r)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
@@ -110,21 +87,24 @@ func UpdateCard(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
-	_, err = db.Query(fmt.Sprintf("UPDATE cards SET comment='%v' WHERE id=%v AND uid=%v;", tmp.Comment, tmp.ID, user.ID))
+	err = UpdateCard(user.ID, tmp.ID, tmp.Comment)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
 	w.WriteHeader(http.StatusOK)
 }
 
-func DeleteCardByID(w http.ResponseWriter, r *http.Request) {
+func DeleteCardHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := GetUserByCookie(r)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
 	vars := mux.Vars(r)
-	id, _ := strconv.Atoi(vars["id"])
-	_, err = db.Exec(fmt.Sprintf("DELETE FROM cards WHERE id=%v AND uid=%v;", id, user.ID))
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
+	err = DeleteCard(id, user.ID)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
