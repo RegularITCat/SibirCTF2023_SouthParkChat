@@ -11,9 +11,10 @@ import (
 )
 
 func GetCards(w http.ResponseWriter, r *http.Request) {
-	c, _ := r.Cookie("token")
-	username := CookieToUserMap[c.Value]
-	user, _ := GetUser(db, username)
+	user, err := GetUserByCookie(r)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
 	var cards []Card
 	rows, err := db.Query(fmt.Sprintf("SELECT id,uid,comment,balance,creation_timestamp,last_transaction FROM cards WHERE uid=%v;", user.ID))
 	if err != nil {
@@ -36,9 +37,10 @@ func GetCards(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetCardByID(w http.ResponseWriter, r *http.Request) {
-	c, _ := r.Cookie("token")
-	username := CookieToUserMap[c.Value]
-	user, _ := GetUser(db, username)
+	user, err := GetUserByCookie(r)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
 	vars := mux.Vars(r)
 	id, _ := strconv.Atoi(vars["id"])
 	if !CheckCardOwner(r) {
@@ -66,25 +68,33 @@ func GetCardByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateCard(w http.ResponseWriter, r *http.Request) {
-	c, _ := r.Cookie("token")
-	username := CookieToUserMap[c.Value]
-	user, _ := GetUser(db, username)
+	user, err := GetUserByCookie(r)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
 	var tmp Card
-	err := json.NewDecoder(r.Body).Decode(&tmp)
+	err = json.NewDecoder(r.Body).Decode(&tmp)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
-	_, err = db.Exec(fmt.Sprintf("INSERT INTO cards (uid, comment, balance, creation_timestamp, last_transaction) VALUES (%v, '%v', %v, %v, %v);", user.ID, tmp.Comment, 0, time.Now().Unix(), 0))
+	result, err := db.Exec(fmt.Sprintf("INSERT INTO cards (uid, comment, balance, creation_timestamp, last_transaction) VALUES (%v, '%v', %v, %v, %v);", user.ID, tmp.Comment, 0, time.Now().Unix(), 0))
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
+	cid, err := result.LastInsertId()
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
+	resultJson, err := json.Marshal(cid)
 	w.WriteHeader(http.StatusOK)
+	w.Write(resultJson)
 }
 
 func UpdateCard(w http.ResponseWriter, r *http.Request) {
-	c, _ := r.Cookie("token")
-	username := CookieToUserMap[c.Value]
-	user, _ := GetUser(db, username)
+	user, err := GetUserByCookie(r)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
 	vars := mux.Vars(r)
 	id := vars["id"]
 	if !CheckCardOwner(r) {
@@ -92,7 +102,7 @@ func UpdateCard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var tmp Card
-	err := json.NewDecoder(r.Body).Decode(&tmp)
+	err = json.NewDecoder(r.Body).Decode(&tmp)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
@@ -108,12 +118,13 @@ func UpdateCard(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteCardByID(w http.ResponseWriter, r *http.Request) {
-	c, _ := r.Cookie("token")
-	username := CookieToUserMap[c.Value]
-	user, _ := GetUser(db, username)
+	user, err := GetUserByCookie(r)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
 	vars := mux.Vars(r)
 	id, _ := strconv.Atoi(vars["id"])
-	_, err := db.Exec(fmt.Sprintf("DELETE FROM cards WHERE id=%v AND uid=%v;", id, user.ID))
+	_, err = db.Exec(fmt.Sprintf("DELETE FROM cards WHERE id=%v AND uid=%v;", id, user.ID))
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}

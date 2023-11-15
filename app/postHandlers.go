@@ -81,11 +81,12 @@ func GetPostByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdatePost(w http.ResponseWriter, r *http.Request) {
-	c, _ := r.Cookie("token")
-	username := CookieToUserMap[c.Value]
-	user, _ := GetUser(db, username)
+	user, err := GetUserByCookie(r)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
 	var tmp Post
-	err := json.NewDecoder(r.Body).Decode(&tmp)
+	err = json.NewDecoder(r.Body).Decode(&tmp)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
@@ -97,9 +98,10 @@ func UpdatePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeletePost(w http.ResponseWriter, r *http.Request) {
-	c, _ := r.Cookie("token")
-	username := CookieToUserMap[c.Value]
-	user, _ := GetUser(db, username)
+	user, err := GetUserByCookie(r)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
@@ -113,17 +115,27 @@ func DeletePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreatePost(w http.ResponseWriter, r *http.Request) {
-	c, _ := r.Cookie("token")
-	username := CookieToUserMap[c.Value]
-	user, _ := GetUser(db, username)
-	var tmp Post
-	err := json.NewDecoder(r.Body).Decode(&tmp)
+	user, err := GetUserByCookie(r)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
-	_, err = db.Exec(fmt.Sprintf("INSERT INTO posts (uid,name,content,creation_timestamp) VALUES (%v, '%v', '%v', %v);", user.ID, tmp.Name, tmp.Content, time.Now().Unix()))
+	var tmp Post
+	err = json.NewDecoder(r.Body).Decode(&tmp)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
+	result, err := db.Exec(fmt.Sprintf("INSERT INTO posts (uid,name,content,creation_timestamp) VALUES (%v, '%v', '%v', %v);", user.ID, tmp.Name, tmp.Content, time.Now().Unix()))
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
+	pid, err := result.LastInsertId()
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
+	resultJson, err := json.Marshal(pid)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
 	w.WriteHeader(http.StatusOK)
+	w.Write(resultJson)
 }

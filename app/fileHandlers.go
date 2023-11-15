@@ -78,7 +78,10 @@ func UploadFile(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
-	fid, _ := result.LastInsertId()
+	fid, err := result.LastInsertId()
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
 	var fileObj File
 	fileObj.ID = int(fid)
 	fileObj.Name = filepath.Base(handler.Filename)

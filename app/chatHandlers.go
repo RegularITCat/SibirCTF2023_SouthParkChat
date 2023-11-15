@@ -11,9 +11,10 @@ import (
 )
 
 func GetChats(w http.ResponseWriter, r *http.Request) {
-	c, _ := r.Cookie("token")
-	username := CookieToUserMap[c.Value]
-	user, _ := GetUser(db, username)
+	user, err := GetUserByCookie(r)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
 	chats := make([]Chat, 0)
 	rows, err := db.Query(fmt.Sprintf("SELECT chats.id, chats.name, chats.description, chats.created_timestamp FROM chats INNER JOIN chat_users ON chats.id = chat_users.cid WHERE chat_users.uid = %v;", user.ID))
 	if err != nil {
@@ -36,9 +37,10 @@ func GetChats(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetChatByID(w http.ResponseWriter, r *http.Request) {
-	c, _ := r.Cookie("token")
-	username := CookieToUserMap[c.Value]
-	user, _ := GetUser(db, username)
+	user, err := GetUserByCookie(r)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
 	vars := mux.Vars(r)
 	id := vars["id"]
 	rows, err := db.Query(fmt.Sprintf("SELECT chats.id, chats.name, chats.description, chats.created_timestamp FROM chats INNER JOIN chat_users ON chats.id = chat_users.cid WHERE chats.id = %v AND chat_users.uid = %v;", id, user.ID))
@@ -62,12 +64,13 @@ func GetChatByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateChat(w http.ResponseWriter, r *http.Request) {
-	c, _ := r.Cookie("token")
-	username := CookieToUserMap[c.Value]
-	user, _ := GetUser(db, username)
+	user, err := GetUserByCookie(r)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
 	timestamp := time.Now().Unix()
 	var tmp Chat
-	err := json.NewDecoder(r.Body).Decode(&tmp)
+	err = json.NewDecoder(r.Body).Decode(&tmp)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
@@ -75,22 +78,31 @@ func CreateChat(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
-	cid, _ := result.LastInsertId()
+	cid, err := result.LastInsertId()
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
 	_, err = db.Exec(fmt.Sprintf("INSERT INTO chat_users (cid, uid, entry_timestamp) VALUES (%v, %v, %v);", cid, user.ID, timestamp))
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
+	resultJson, err := json.Marshal(cid)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
 	w.WriteHeader(http.StatusOK)
+	w.Write(resultJson)
 }
 
 func UpdateChat(w http.ResponseWriter, r *http.Request) {
-	c, _ := r.Cookie("token")
-	username := CookieToUserMap[c.Value]
-	user, _ := GetUser(db, username)
+	user, err := GetUserByCookie(r)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
 	vars := mux.Vars(r)
 	id := vars["id"]
 	var tmp Chat
-	err := json.NewDecoder(r.Body).Decode(&tmp)
+	err = json.NewDecoder(r.Body).Decode(&tmp)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
@@ -103,12 +115,13 @@ func UpdateChat(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteChatByID(w http.ResponseWriter, r *http.Request) {
-	c, _ := r.Cookie("token")
-	username := CookieToUserMap[c.Value]
-	user, _ := GetUser(db, username)
+	user, err := GetUserByCookie(r)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
 	vars := mux.Vars(r)
 	id := vars["id"]
-	_, err := db.Exec(fmt.Sprintf("DELETE FROM chats WHERE id = %v AND admin_id=%v;", id, user.ID))
+	_, err = db.Exec(fmt.Sprintf("DELETE FROM chats WHERE id = %v AND admin_id=%v;", id, user.ID))
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}

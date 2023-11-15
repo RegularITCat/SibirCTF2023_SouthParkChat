@@ -29,9 +29,10 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetMyUser(w http.ResponseWriter, r *http.Request) {
-	c, _ := r.Cookie("token")
-	username := CookieToUserMap[c.Value]
-	user, _ := GetUser(db, username)
+	user, err := GetUserByCookie(r)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
 	rows, err := db.Query(fmt.Sprintf("SELECT * FROM users WHERE id = %v", user.ID))
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
@@ -51,11 +52,12 @@ func GetMyUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateMyUser(w http.ResponseWriter, r *http.Request) {
-	c, _ := r.Cookie("token")
-	username := CookieToUserMap[c.Value]
-	user, _ := GetUser(db, username)
+	user, err := GetUserByCookie(r)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
 	var tmp User
-	err := json.NewDecoder(r.Body).Decode(&tmp)
+	err = json.NewDecoder(r.Body).Decode(&tmp)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
@@ -72,10 +74,11 @@ func UpdateMyUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteMyUser(w http.ResponseWriter, r *http.Request) {
-	c, _ := r.Cookie("token")
-	username := CookieToUserMap[c.Value]
-	user, _ := GetUser(db, username)
-	err := DeleteMyUserInDB(user.ID)
+	user, err := GetUserByCookie(r)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
+	err = DeleteMyUserInDB(user.ID)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}

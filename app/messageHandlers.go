@@ -11,9 +11,10 @@ import (
 )
 
 func GetMessages(w http.ResponseWriter, r *http.Request) {
-	c, _ := r.Cookie("token")
-	username := CookieToUserMap[c.Value]
-	user, _ := GetUser(db, username)
+	user, err := GetUserByCookie(r)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
 	vars := mux.Vars(r)
 	cid, err := strconv.Atoi(vars["cid"])
 	if err != nil {
@@ -50,9 +51,10 @@ func GetMessages(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateMessage(w http.ResponseWriter, r *http.Request) {
-	c, _ := r.Cookie("token")
-	username := CookieToUserMap[c.Value]
-	user, _ := GetUser(db, username)
+	user, err := GetUserByCookie(r)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
 	vars := mux.Vars(r)
 	cid, err := strconv.Atoi(vars["cid"])
 	if err != nil {
@@ -71,17 +73,27 @@ func CreateMessage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
-	_, err = db.Exec(fmt.Sprintf("INSERT INTO messages (cid, uid, message, timestamp) VALUES (%v, %v, '%v', %v);", cid, user.ID, tmp.Message, time.Now().Unix()))
+	result, err := db.Exec(fmt.Sprintf("INSERT INTO messages (cid, uid, message, timestamp) VALUES (%v, %v, '%v', %v);", cid, user.ID, tmp.Message, time.Now().Unix()))
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
+	mid, err := result.LastInsertId()
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
+	resultJson, err := json.Marshal(mid)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
 	w.WriteHeader(http.StatusOK)
+	w.Write(resultJson)
 }
 
 func UpdateMessage(w http.ResponseWriter, r *http.Request) {
-	c, _ := r.Cookie("token")
-	username := CookieToUserMap[c.Value]
-	user, _ := GetUser(db, username)
+	user, err := GetUserByCookie(r)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
 	vars := mux.Vars(r)
 	cid, err := strconv.Atoi(vars["cid"])
 	if err != nil {
@@ -112,9 +124,10 @@ func UpdateMessage(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteMessage(w http.ResponseWriter, r *http.Request) {
-	c, _ := r.Cookie("token")
-	username := CookieToUserMap[c.Value]
-	user, _ := GetUser(db, username)
+	user, err := GetUserByCookie(r)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
 	vars := mux.Vars(r)
 	cid, err := strconv.Atoi(vars["cid"])
 	if err != nil {

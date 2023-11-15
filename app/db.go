@@ -85,7 +85,7 @@ func CreateUser(login, password, firstName, secondName string) error {
 		"INSERT INTO cards (uid, comment, balance, creation_timestamp, last_transaction) VALUES (%v, '%v', %v, '%v', %v);",
 		uid,
 		fmt.Sprintf("user %v default card", login),
-		//TODO when date is come, stop giving money for free
+		//TODO when date is come, stop giving money for free (p.s. after ctf for example lol)
 		100.0,
 		timestamp,
 		0,

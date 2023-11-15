@@ -1,0 +1,56 @@
+version: '3'
+
+services:
+  chat:
+    container_name: chat
+    restart: on-failure
+    build: ./app/
+    ports:
+      - "8888:8888/tcp"
+    environment:
+      - SOUTHPARKCHAT_ADDR=0.0.0.0:8888
+      - SOUTHPARKCHAT_DB_ADDR=/data/chat/tmp.db
+    volumes:
+      - ./data/:/data
+    depends_on: 
+      postgresql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-O", "-", "http://localhost:8888/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      start_period: 160s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 800M
+        reservations:
+          cpus: '1'
+          memory: 400M
+  postgresql:
+    container_name: chat_db
+    restart: on-failure
+    image: postgres:16.1
+    ports:
+      - "8889:5432/tcp"
+    environment:
+      - POSTGRES_USER=postgres_admin_mega_secret_user
+      - POSTGRES_PASSWORD=postgres_admin_mega_secret_pass
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 400M
+        reservations:
+          cpus: '0.5'
+          memory: 200M
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready"]
+      interval: 10s
+      timeout: 5s
+      start_period: 15s
+      retries: 5

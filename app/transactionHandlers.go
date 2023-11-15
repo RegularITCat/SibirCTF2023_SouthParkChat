@@ -112,7 +112,10 @@ func CreateTransaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	result, err := db.Exec(fmt.Sprintf("INSERT INTO transactions (from_card, to_card, amount, comment, timestamp) VALUES ('%v', '%v', %v, '%v', %v);", cid, tmp.ToCard, tmp.Amount, tmp.Comment, time.Now().Unix()))
-	tid, _ := result.LastInsertId()
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
+	tid, err := result.LastInsertId()
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
