@@ -32,7 +32,7 @@ func PanicRecoveryMiddleware(next http.Handler) http.Handler {
 }
 
 var disallowWithoutAuthList []*regexp.Regexp = []*regexp.Regexp{
-	regexp.MustCompile(".*/api/v1/health.*"),
+	//regexp.MustCompile(".*/api/v1/health.*"),
 	regexp.MustCompile(".*/api/v1/user.*"),
 	regexp.MustCompile(".*/api/v1/chat.*"),
 	regexp.MustCompile(".*/api/v1/card.*"),

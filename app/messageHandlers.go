@@ -28,6 +28,7 @@ func GetMessages(w http.ResponseWriter, r *http.Request) {
 	}
 	messages := make([]Message, 0)
 	rows, err := db.Query(fmt.Sprintf("SELECT id,cid,uid,message,timestamp FROM messages WHERE cid=%v;", cid))
+	defer rows.Close()
 	if err != nil {
 		log.Println(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

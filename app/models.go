@@ -29,7 +29,7 @@ type ChatUsers struct {
 type Message struct {
 	ID        int    `json:"id,omitempty"`
 	CID       int    `json:"cid,omitempty"`
-	UID       int    `json:"rid,omitempty"`
+	UID       int    `json:"uid,omitempty"`
 	Message   string `json:"message,omitempty"`
 	Timestamp int64  `json:"timestamp,omitempty"`
 }

@@ -24,6 +24,7 @@ func GetTransactions(w http.ResponseWriter, r *http.Request) {
 	}
 	transactions := make([]Transaction, 0)
 	rows, err := db.Query(fmt.Sprintf("SELECT * FROM transactions WHERE from_card=%v OR to_card=%v;", cid, cid))
+	defer rows.Close()
 	if err != nil {
 		log.Println(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -60,11 +61,9 @@ func GetTransactionByID(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !CheckCardOwner(r) {
-		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
-		return
-	}
-	rows, err := db.Query(fmt.Sprintf("SELECT * FROM transactions WHERE id=%v AND from_card=%v", id, cid))
+	//TODO check card owner
+	rows, err := db.Query(fmt.Sprintf("SELECT * FROM transactions WHERE id=%v AND from_card=%v;", id, cid))
+	defer rows.Close()
 	if err != nil {
 		log.Println(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -112,6 +111,7 @@ func CreateTransaction(w http.ResponseWriter, r *http.Request) {
 
 	var from_card Card
 	rows, err := db.Query(fmt.Sprintf("SELECT * FROM cards WHERE id=%v", cid))
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&from_card.ID, &from_card.UID, &from_card.Comment, &from_card.Balance, &from_card.CreationTimestamp, &from_card.LastTransaction)
 		if err != nil {

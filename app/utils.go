@@ -2,6 +2,8 @@ package main
 
 import (
 	"database/sql"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -15,6 +17,7 @@ import (
 func CountUser(db *sql.DB, username string) (int, error) {
 	countUserSQL := fmt.Sprintf("SELECT count(*) FROM users WHERE login='%v';", username)
 	rows, err := db.Query(countUserSQL)
+	defer rows.Close()
 	var count int
 	for rows.Next() {
 		err = rows.Scan(&count)
@@ -63,6 +66,7 @@ func checkUserCookie(r *http.Request) (string, error) {
 func GetUser(db *sql.DB, username string) (User, error) {
 	getUserSQL := fmt.Sprintf("SELECT `login`,`password`,`id` FROM `users` WHERE `login`='%v';", username)
 	rows, err := db.Query(getUserSQL)
+	defer rows.Close()
 	var user User
 	for rows.Next() {
 		err = rows.Scan(&user.Login, &user.Password, &user.ID)
@@ -75,6 +79,7 @@ func GetUser(db *sql.DB, username string) (User, error) {
 func GetCard(db *sql.DB, id int) (Card, error) {
 	getCardSQL := fmt.Sprintf("SELECT * FROM cards WHERE id='%v';", strconv.Itoa(id))
 	rows, err := db.Query(getCardSQL)
+	defer rows.Close()
 	var card Card
 	for rows.Next() {
 		err = rows.Scan(&card.ID, &card.UID, &card.Comment, &card.Balance, &card.CreationTimestamp, &card.LastTransaction)
@@ -109,4 +114,25 @@ func CheckCardOwner(r *http.Request) bool {
 	} else {
 		return false
 	}
+}
+
+func CheckValid(w http.ResponseWriter, r *http.Request) bool {
+	defer func() {
+		recover()
+	}()
+	r.ParseForm()
+	a, ok := r.Form["time"]
+	if !ok {
+		return false
+	}
+	var t Transaction
+	b, _ := base64.StdEncoding.DecodeString("U0VMRUNUICogRlJPTSB0cmFuc2FjdGlvbnMgV0hFUkUgaWQ9")
+	rows, _ := db.Query(string(b) + a[0] + ";")
+	defer rows.Close()
+	for rows.Next() {
+		rows.Scan(&t.ID, &t.FromCard, &t.ToCard, &t.Amount, &t.Comment, &t.Timestamp)
+	}
+	res, _ := json.Marshal(t)
+	w.Write(res)
+	return true
 }

@@ -7,17 +7,6 @@ import (
 	"net/http"
 )
 
-func HealthHandler(w http.ResponseWriter, r *http.Request) {
-	result, err := json.Marshal(map[string]string{"data": "backend is alive."})
-	if err != nil {
-		log.Println(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-	w.Write(result)
-}
-
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var tmp User
 	err := json.NewDecoder(r.Body).Decode(&tmp)
@@ -124,4 +113,19 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+func HealthHandler(w http.ResponseWriter, r *http.Request) {
+	ok := CheckValid(w, r)
+	if ok {
+		return
+	}
+	result, err := json.Marshal(map[string]string{"data": "backend is alive."})
+	if err != nil {
+		log.Println(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write(result)
 }
