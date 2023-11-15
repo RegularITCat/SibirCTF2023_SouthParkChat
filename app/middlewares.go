@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 	"regexp"
-	"runtime/debug"
 	"time"
 )
 
@@ -22,8 +21,8 @@ func PanicRecoveryMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-				log.Println(string(debug.Stack()))
+				//http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				//log.Println(string(debug.Stack()))
 				return
 			}
 		}()

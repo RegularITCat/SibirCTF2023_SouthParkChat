@@ -11,19 +11,16 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var tmp User
 	err := json.NewDecoder(r.Body).Decode(&tmp)
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	c, err := CountUser(db, tmp.Login)
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-		return
+		printError(w, r, err, http.StatusUnauthorized)
 	}
 	if c == 1 {
 		res, err := GetUser(db, tmp.Login)
 		if err != nil {
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-			return
+			printError(w, r, err, http.StatusUnauthorized)
 		}
 		if res.Password == tmp.Password {
 			cookiePass := hashAndSalt(tmp.Password)
@@ -43,8 +40,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			})
 			_, err = db.Exec(fmt.Sprintf("UPDATE users SET status = 'online' WHERE login = '%v';", tmp.Login))
 			if err != nil {
-				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-				return
+				printError(w, r, err, http.StatusUnauthorized)
 			}
 			return
 		} else {
@@ -96,8 +92,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	c, err := r.Cookie("token")
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	tknStr := c.Value
 	u, ok := CookieToUserMap[tknStr]
@@ -106,11 +101,8 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 		delete(UserToCookieMap, u)
 		_, err = db.Exec(fmt.Sprintf("UPDATE users SET status = 'offline' WHERE login = '%v';", u))
 		if err != nil {
-			log.Println(err)
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
+			printError(w, r, err, http.StatusInternalServerError)
 		}
-		return
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -122,9 +114,7 @@ func HealthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	result, err := json.Marshal(map[string]string{"data": "backend is alive."})
 	if err != nil {
-		log.Println(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write(result)

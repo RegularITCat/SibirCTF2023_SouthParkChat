@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -21,9 +20,7 @@ func GetPosts(w http.ResponseWriter, r *http.Request) {
 	} else {
 		page, err = strconv.Atoi(pageString[0])
 		if err != nil {
-			log.Println(err)
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
+			printError(w, r, err, http.StatusInternalServerError)
 		}
 	}
 	pageSizeString, ok := r.Form["pageSize"]
@@ -32,33 +29,26 @@ func GetPosts(w http.ResponseWriter, r *http.Request) {
 	} else {
 		pageSize, err = strconv.Atoi(pageSizeString[0])
 		if err != nil {
-			log.Println(err)
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
+			printError(w, r, err, http.StatusInternalServerError)
 		}
 	}
 	posts := make([]Post, 0)
 	rows, err := db.Query(fmt.Sprintf("SELECT id,uid,name,creation_timestamp FROM posts LIMIT %v OFFSET %v;", page*pageSize, pageSize))
 	defer rows.Close()
 	if err != nil {
-		log.Println(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	for rows.Next() {
 		var post Post
 		err = rows.Scan(&post.ID, &post.UID, &post.Name, &post.CreationTimestamp)
 		if err != nil {
-			log.Println(err)
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
+			printError(w, r, err, http.StatusInternalServerError)
 		}
 		posts = append(posts, post)
 	}
 	resultJSON, err := json.Marshal(posts)
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write(resultJSON)
@@ -68,29 +58,23 @@ func GetPostByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	var post Post
 	rows, err := db.Query(fmt.Sprintf("SELECT id,uid,content,name,creation_timestamp FROM posts WHERE id=%v;", id))
 	defer rows.Close()
 	if err != nil {
-		log.Println(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	for rows.Next() {
 		err = rows.Scan(&post.ID, &post.UID, &post.Content, &post.Name, &post.CreationTimestamp)
 		if err != nil {
-			log.Println(err)
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
+			printError(w, r, err, http.StatusInternalServerError)
 		}
 	}
 	resultJSON, err := json.Marshal(post)
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write(resultJSON)
@@ -103,14 +87,11 @@ func UpdatePost(w http.ResponseWriter, r *http.Request) {
 	var tmp Post
 	err := json.NewDecoder(r.Body).Decode(&tmp)
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	_, err = db.Query(fmt.Sprintf("UPDATE posts SET name='%v',content='%v' WHERE id=%v AND uid=%v;", tmp.Name, tmp.Content, tmp.ID, user.ID))
 	if err != nil {
-		log.Println(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -122,14 +103,11 @@ func DeletePost(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	_, err = db.Exec(fmt.Sprintf("DELETE FROM posts WHERE id=%v AND uid=%v;", id, user.ID))
 	if err != nil {
-		log.Println(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -141,14 +119,11 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 	var tmp Post
 	err := json.NewDecoder(r.Body).Decode(&tmp)
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	_, err = db.Exec(fmt.Sprintf("INSERT INTO posts (uid,name,content,creation_timestamp) VALUES (%v, '%v', '%v', %v);", user.ID, tmp.Name, tmp.Content, time.Now().Unix()))
 	if err != nil {
-		log.Println(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	w.WriteHeader(http.StatusOK)
 }

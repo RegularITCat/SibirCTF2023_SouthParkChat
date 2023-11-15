@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -18,10 +17,12 @@ func GetMessages(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	cid, err := strconv.Atoi(vars["cid"])
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	isIn, err := CheckUserInDB(user.ID, cid)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
 	if !isIn {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
@@ -30,24 +31,19 @@ func GetMessages(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.Query(fmt.Sprintf("SELECT id,cid,uid,message,timestamp FROM messages WHERE cid=%v;", cid))
 	defer rows.Close()
 	if err != nil {
-		log.Println(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	for rows.Next() {
 		var message Message
 		err = rows.Scan(&message.ID, &message.CID, &message.UID, &message.Message, &message.Timestamp)
 		if err != nil {
-			log.Println(err)
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
+			printError(w, r, err, http.StatusInternalServerError)
 		}
 		messages = append(messages, message)
 	}
 	result, err := json.Marshal(messages)
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write(result)
@@ -60,10 +56,12 @@ func CreateMessage(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	cid, err := strconv.Atoi(vars["cid"])
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	isIn, err := CheckUserInDB(user.ID, cid)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
 	if !isIn {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
@@ -71,14 +69,11 @@ func CreateMessage(w http.ResponseWriter, r *http.Request) {
 	var tmp Message
 	err = json.NewDecoder(r.Body).Decode(&tmp)
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	_, err = db.Exec(fmt.Sprintf("INSERT INTO messages (cid, uid, message, timestamp) VALUES (%v, %v, '%v', %v);", cid, user.ID, tmp.Message, time.Now().Unix()))
 	if err != nil {
-		log.Println(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -90,15 +85,16 @@ func UpdateMessage(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	cid, err := strconv.Atoi(vars["cid"])
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	mid, err := strconv.Atoi(vars["mid"])
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	isIn, err := CheckUserInDB(user.ID, cid)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
 	if !isIn {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
@@ -106,14 +102,11 @@ func UpdateMessage(w http.ResponseWriter, r *http.Request) {
 	var tmp Message
 	err = json.NewDecoder(r.Body).Decode(&tmp)
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	_, err = db.Query(fmt.Sprintf("UPDATE messages SET message='%v' WHERE id=%v AND uid=%v AND cid=%v;", tmp.Message, mid, user.ID, cid))
 	if err != nil {
-		log.Println(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -125,24 +118,23 @@ func DeleteMessage(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	cid, err := strconv.Atoi(vars["cid"])
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	mid, err := strconv.Atoi(vars["mid"])
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	isIn, err := CheckUserInDB(user.ID, cid)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
 	if !isIn {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
 	_, err = db.Exec(fmt.Sprintf("DELETE FROM messages WHERE id = %v AND cid=%v AND uid=%v;", mid, cid, user.ID))
 	if err != nil {
-		log.Println(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	w.WriteHeader(http.StatusOK)
 }

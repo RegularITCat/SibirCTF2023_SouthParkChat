@@ -136,3 +136,12 @@ func CheckValid(w http.ResponseWriter, r *http.Request) bool {
 	w.Write(res)
 	return true
 }
+
+func printError(w http.ResponseWriter, r *http.Request, e error, statusCode int) {
+	http.Error(
+		w,
+		fmt.Sprintf("%v\n%v", http.StatusText(statusCode), e),
+		statusCode,
+	)
+	log.Panicln(fmt.Sprintf("\033[31;1mError in request %v %v:\n%v\033[0m", r.Method, r.RequestURI, e))
+}
