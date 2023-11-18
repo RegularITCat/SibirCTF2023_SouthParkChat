@@ -22,7 +22,7 @@ func CreateDB(path string) (*sql.DB, error) {
 	_, _ = sqlDB.Exec("CREATE TABLE IF NOT EXISTS transactions (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, from_card INTEGER NOT NULL, to_card INTEGER NOT NULL, amount REAL NOT NULL, comment TEXT, timestamp INTEGER NOT NULL);")
 	_, _ = sqlDB.Exec("CREATE TABLE IF NOT EXISTS chat_users (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, cid INTEGER NOT NULL, uid INTEGER NOT NULL, entry_timestamp INTEGER NOT NULL);")
 	_, _ = sqlDB.Exec("CREATE TABLE IF NOT EXISTS files (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, path TEXT NOT NULL, upload_timestamp INTEGER NOT NULL);")
-	_, _ = sqlDB.Exec("CREATE TABLE IF NOT EXISTS posts (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, uid INTEGER NOT NULL, name TEXT NOT NULL, comment TEXT NOT NULL, creation_timestamp INTEGER NOT NULL);")
+	_, _ = sqlDB.Exec("CREATE TABLE IF NOT EXISTS posts (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, uid INTEGER NOT NULL, name TEXT NOT NULL, content TEXT NOT NULL, creation_timestamp INTEGER NOT NULL);")
 	rows, err := sqlDB.Query("SELECT count(*) FROM chats WHERE name='general';")
 	var count int
 	for rows.Next() {
@@ -495,4 +495,20 @@ func GetUsers(page, pageSize int) ([]User, error) {
 		users = append(users, user)
 	}
 	return users, nil
+}
+
+func GetMessageFromDB(cid, mid int) (Message, error) {
+	var message Message
+	rows, err := db.Query(fmt.Sprintf("SELECT id,cid,uid,message,timestamp FROM messages WHERE cid=%v AND id=%v;", cid, mid))
+	defer rows.Close()
+	if err != nil {
+		return message, err
+	}
+	for rows.Next() {
+		err = rows.Scan(&message.ID, &message.CID, &message.UID, &message.Message, &message.Timestamp)
+		if err != nil {
+			return message, err
+		}
+	}
+	return message, err
 }

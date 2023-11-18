@@ -48,6 +48,7 @@ func main() {
 	router.HandleFunc("/api/v1/chat/{id:[0-9]+}", UpdateChatHandler).Methods("PUT")
 	router.HandleFunc("/api/v1/chat/{id:[0-9]+}", DeleteChatHandler).Methods("DELETE")
 	router.HandleFunc("/api/v1/chat", CreateChatHandler).Methods("POST")
+	router.HandleFunc("/api/v1/chat/{cid:[0-9]+}/message/{mid:[0-9]+}", GetMessageHandler).Methods("GET")
 	router.HandleFunc("/api/v1/chat/{cid:[0-9]+}/message", GetMessagesHandler).Methods("GET")
 	router.HandleFunc("/api/v1/chat/{cid:[0-9]+}/message/{mid:[0-9]+}", UpdateMessageHandler).Methods("PUT")
 	router.HandleFunc("/api/v1/chat/{cid:[0-9]+}/message/{mid:[0-9]+}", DeleteMessageHandler).Methods("DELETE")

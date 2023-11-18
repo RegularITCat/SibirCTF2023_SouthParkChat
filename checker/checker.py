@@ -68,13 +68,30 @@ def put_flag():
     try:
         #TODO
         r = requests.get(url + "/api/v1/health", timeout=5)
-        time.sleep(random.randint(1,3)-0.99)
         sess = requests.Session()
         r = sess.post(url + "/api/v1/register", json={"login":login,"password":password, "first_name":name["first_name"], "second_name":name["second_name"]}, timeout=5)
         #WTF FUCKING PYTHON WHY
         cookies = requests.utils.cookiejar_from_dict(sess.cookies.get_dict())
         sess.cookies.update(cookies)
-        time.sleep(random.randint(1,3)-0.99)
+        check_random_func = random.randint(1,3)
+        check_random_func = 3
+        if check_random_func == 1:
+            fileobj = sess.post(url + "/api/v1/file", files={"file":("test.file", message, "multipart/form-data")}).json()
+            r = sess.get(url + "/api/v1/file/" + str(fileobj["id"]))
+            r = sess.get(url + "/api/v1/file/" + str(fileobj["id"]) + "/download")
+            if r.text != message:
+                service_corrupt()
+        elif check_random_func == 2:
+            r = sess.get(url + "/api/v1/chat")
+            resp = sess.post(url + "/api/v1/chat/0/message", json={"message":message}, timeout=5).json()
+            res = sess.get(url + "/api/v1/chat/0/message/" + str(resp)).json()
+            if res["message"] != message:
+                service_corrupt()
+        elif check_random_func == 3:
+            r = sess.post(url + "/api/v1/post", json={"name":"test", "content":message}).json()
+            res = sess.get(url + "/api/v1/post/" + str(r)).json()
+            if res["content"] != message:
+                service_corrupt()
         r = sess.post(url + "/api/v1/card", json={"comment":' '.join([id_generator(size=random.randint(4,12)) for _ in range(random.randint(2,5))])}, timeout=5)
         time.sleep(random.randint(1,3)-0.99)
         r = sess.get(url + "/api/v1/card", timeout=5)
@@ -88,6 +105,7 @@ def put_flag():
     except requests.exceptions.RequestException as e:
         service_mumble()
     except Exception as e:
+        print(e)
         debug(e)
         service_corrupt()
 

@@ -38,6 +38,28 @@ func GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(result)
 }
 
+func GetMessageHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	cid, err := strconv.Atoi(vars["cid"])
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
+	mid, err := strconv.Atoi(vars["mid"])
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
+	message, err := GetMessageFromDB(cid, mid)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
+	result, err := json.Marshal(message)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write(result)
+}
+
 func CreateMessageHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := GetUserByCookie(r)
 	if err != nil {
