@@ -9,6 +9,8 @@ import pickle
 import time
 import json
 
+TIMEOUT = 5
+
 # put-get flag to service success
 def service_up():
     print("[service is worked] - 101")
@@ -67,37 +69,36 @@ def put_flag():
     
     try:
         #TODO
-        r = requests.get(url + "/api/v1/health", timeout=5)
+        r = requests.get(url + "/api/v1/health", timeout=TIMEOUT)
         sess = requests.Session()
-        r = sess.post(url + "/api/v1/register", json={"login":login,"password":password, "first_name":name["first_name"], "second_name":name["second_name"]}, timeout=5)
+        r = sess.post(url + "/api/v1/register", json={"login":login,"password":password, "first_name":name["first_name"], "second_name":name["second_name"]}, timeout=TIMEOUT)
         #WTF FUCKING PYTHON WHY
         cookies = requests.utils.cookiejar_from_dict(sess.cookies.get_dict())
         sess.cookies.update(cookies)
         check_random_func = random.randint(1,3)
         check_random_func = 3
         if check_random_func == 1:
-            fileobj = sess.post(url + "/api/v1/file", files={"file":("test.file", message, "multipart/form-data")}).json()
-            r = sess.get(url + "/api/v1/file/" + str(fileobj["id"]))
-            r = sess.get(url + "/api/v1/file/" + str(fileobj["id"]) + "/download")
+            fileobj = sess.post(url + "/api/v1/file", files={"file":("test.file", message, "multipart/form-data")}, timeout=TIMEOUT).json()
+            r = sess.get(url + "/api/v1/file/" + str(fileobj["id"]), timeout=TIMEOUT)
+            r = sess.get(url + "/api/v1/file/" + str(fileobj["id"]) + "/download", timeout=TIMEOUT)
             if r.text != message:
                 service_corrupt()
         elif check_random_func == 2:
-            r = sess.get(url + "/api/v1/chat")
-            resp = sess.post(url + "/api/v1/chat/0/message", json={"message":message}, timeout=5).json()
-            res = sess.get(url + "/api/v1/chat/0/message/" + str(resp)).json()
+            r = sess.get(url + "/api/v1/chat", timeout=TIMEOUT)
+            resp = sess.post(url + "/api/v1/chat/0/message", json={"message":message}, timeout=TIMEOUT).json()
+            res = sess.get(url + "/api/v1/chat/0/message/" + str(resp), timeout=TIMEOUT).json()
             if res["message"] != message:
                 service_corrupt()
         elif check_random_func == 3:
-            r = sess.post(url + "/api/v1/post", json={"name":"test", "content":message}).json()
-            res = sess.get(url + "/api/v1/post/" + str(r)).json()
+            r = sess.post(url + "/api/v1/post", json={"name":"test", "content":message}, timeout=TIMEOUT).json()
+            res = sess.get(url + "/api/v1/post/" + str(r), timeout=TIMEOUT).json()
             if res["content"] != message:
                 service_corrupt()
-        r = sess.post(url + "/api/v1/card", json={"comment":' '.join([id_generator(size=random.randint(4,12)) for _ in range(random.randint(2,5))])}, timeout=5)
-        time.sleep(random.randint(1,3)-0.99)
-        r = sess.get(url + "/api/v1/card", timeout=5)
+        r = sess.post(url + "/api/v1/card", json={"comment":' '.join([id_generator(size=random.randint(4,12)) for _ in range(random.randint(2,5))])}, timeout=TIMEOUT)
+        r = sess.get(url + "/api/v1/card", timeout=TIMEOUT)
         r = r.json()
         card_id = r[0]["id"]
-        r = sess.post(url + "/api/v1/card/" + str(r[0]["id"]) + "/transaction", json={"to_card":r[1]["id"],"amount": r[0]["balance"] - 1, "comment":flag}, timeout=5)
+        r = sess.post(url + "/api/v1/card/" + str(r[0]["id"]) + "/transaction", json={"to_card":r[1]["id"],"amount": r[0]["balance"] - 1, "comment":flag}, timeout=TIMEOUT)
         with open("./flags/" + flag + ".json", "w") as f:
             json.dump({"login":login,"password":password,"first_name":name["first_name"],"second_name":name["second_name"], "message":message,"flag":flag,"card_id":card_id,"transaction_id":r.json()},f)
     except requests.exceptions.ConnectionError:
@@ -117,11 +118,11 @@ def check_flag():
         with open("./flags/" + flag + ".json", "r") as f:
             data = json.load(f)
         sess = requests.Session()
-        r = sess.post(url + "/api/v1/login", json={"login":data["login"],"password":data["password"]}, timeout=5)
+        r = sess.post(url + "/api/v1/login", json={"login":data["login"],"password":data["password"]}, timeout=TIMEOUT)
         #WTF FUCKING PYTHON WHY
         cookies = requests.utils.cookiejar_from_dict(r.cookies.get_dict())
         sess.cookies.update(cookies)
-        r = sess.get(url + "/api/v1/card/" + str(data["card_id"]) + "/transaction/" + str(data["transaction_id"]), timeout=5)
+        r = sess.get(url + "/api/v1/card/" + str(data["card_id"]) + "/transaction/" + str(data["transaction_id"]), timeout=TIMEOUT)
         flag2 = r.json()["comment"]
     except Exception as e:
         debug(e)
