@@ -1,0 +1,28 @@
+version: '3'
+
+services:
+  chat:
+    container_name: chat
+    restart: on-failure
+    build: ./app/
+    ports:
+      - "8888:8888/tcp"
+    environment:
+      - SOUTHPARKCHAT_ADDR=0.0.0.0:8888
+      - SOUTHPARKCHAT_DB_ADDR=/data/chat/tmp.db
+    volumes:
+      - ./data/:/data
+    healthcheck:
+      test: ["CMD", "wget", "-O", "-", "http://localhost:8888/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      start_period: 160s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 800M
+        reservations:
+          cpus: '1'
+          memory: 400M
