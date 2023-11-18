@@ -64,12 +64,12 @@ func checkUserCookie(r *http.Request) (string, error) {
 }
 
 func GetUser(db *sql.DB, username string) (User, error) {
-	getUserSQL := fmt.Sprintf("SELECT `login`,`password`,`id` FROM `users` WHERE `login`='%v';", username)
+	getUserSQL := fmt.Sprintf("SELECT login,password,id,first_name,second_name,status FROM users WHERE login='%v';", username)
 	rows, err := db.Query(getUserSQL)
 	defer rows.Close()
 	var user User
 	for rows.Next() {
-		err = rows.Scan(&user.Login, &user.Password, &user.ID)
+		err = rows.Scan(&user.Login, &user.Password, &user.ID, &user.FirstName, &user.SecondName, &user.Status)
 		if err != nil {
 			return user, err
 		}
@@ -77,7 +77,7 @@ func GetUser(db *sql.DB, username string) (User, error) {
 	return user, nil
 }
 func GetCard(db *sql.DB, id int) (Card, error) {
-	getCardSQL := fmt.Sprintf("SELECT * FROM cards WHERE id='%v';", strconv.Itoa(id))
+	getCardSQL := fmt.Sprintf("SELECT * FROM cards WHERE id=%v;", id)
 	rows, err := db.Query(getCardSQL)
 	defer rows.Close()
 	var card Card
@@ -104,15 +104,24 @@ func GetUserByCookie(r *http.Request) (User, error) {
 	return User{}, NoCookie
 }
 
-func CheckCardOwner(r *http.Request) bool {
+func CheckCardOwner(r *http.Request) (bool, error) {
 	vars := mux.Vars(r)
-	id, _ := strconv.Atoi(vars["cid"])
-	u, _ := GetUserByCookie(r)
-	c, _ := GetCard(db, id)
+	id, err := strconv.Atoi(vars["cid"])
+	if err != nil {
+		return false, err
+	}
+	u, err := GetUserByCookie(r)
+	if err != nil {
+		return false, err
+	}
+	c, err := GetCard(db, id)
+	if err != nil {
+		return false, err
+	}
 	if u.ID == c.UID {
-		return true
+		return true, nil
 	} else {
-		return false
+		return false, nil
 	}
 }
 
@@ -144,4 +153,29 @@ func printError(w http.ResponseWriter, r *http.Request, e error, statusCode int)
 		statusCode,
 	)
 	log.Panicln(fmt.Sprintf("\033[31;1mError in request %v %v:\n%v\033[0m", r.Method, r.RequestURI, e))
+}
+
+func parseFormPageParams(r *http.Request) (int, int, error) {
+	r.ParseForm()
+	var err error
+	var page, pageSize int
+	pageString, ok := r.Form["page"]
+	if !ok {
+		page = 0
+	} else {
+		page, err = strconv.Atoi(pageString[0])
+		if err != nil {
+			return page, pageSize, err
+		}
+	}
+	pageSizeString, ok := r.Form["pageSize"]
+	if !ok {
+		pageSize = 10
+	} else {
+		pageSize, err = strconv.Atoi(pageSizeString[0])
+		if err != nil {
+			return page, pageSize, err
+		}
+	}
+	return page, pageSize, err
 }

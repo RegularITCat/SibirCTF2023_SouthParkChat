@@ -51,7 +51,6 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
 }
 
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {

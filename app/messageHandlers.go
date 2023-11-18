@@ -2,10 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -28,19 +26,9 @@ func GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
-	messages := make([]Message, 0)
-	rows, err := db.Query(fmt.Sprintf("SELECT id,cid,uid,message,timestamp FROM messages WHERE cid=%v;", cid))
-	defer rows.Close()
+	messages, err := GetMessages(cid)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
-	}
-	for rows.Next() {
-		var message Message
-		err = rows.Scan(&message.ID, &message.CID, &message.UID, &message.Message, &message.Timestamp)
-		if err != nil {
-			printError(w, r, err, http.StatusInternalServerError)
-		}
-		messages = append(messages, message)
 	}
 	result, err := json.Marshal(messages)
 	if err != nil {
@@ -73,15 +61,11 @@ func CreateMessageHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
-	result, err := db.Exec(fmt.Sprintf("INSERT INTO messages (cid, uid, message, timestamp) VALUES (%v, %v, '%v', %v);", cid, user.ID, tmp.Message, time.Now().Unix()))
+	result, err := CreateMessage(cid, user.ID, tmp.Message)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
-	mid, err := result.LastInsertId()
-	if err != nil {
-		printError(w, r, err, http.StatusInternalServerError)
-	}
-	resultJson, err := json.Marshal(mid)
+	resultJson, err := json.Marshal(result)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
@@ -116,7 +100,7 @@ func UpdateMessageHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
-	_, err = db.Query(fmt.Sprintf("UPDATE messages SET message='%v' WHERE id=%v AND uid=%v AND cid=%v;", tmp.Message, mid, user.ID, cid))
+	err = UpdateMessage(mid, user.ID, cid, tmp.Message)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
@@ -145,7 +129,7 @@ func DeleteMessageHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
-	_, err = db.Exec(fmt.Sprintf("DELETE FROM messages WHERE id = %v AND cid=%v AND uid=%v;", mid, cid, user.ID))
+	err = DeleteMessage(mid, user.ID, cid)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}

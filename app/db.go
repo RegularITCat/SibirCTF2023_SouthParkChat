@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"path/filepath"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -193,7 +194,7 @@ func UpdateCard(userID, id int, comment string) error {
 	return err
 }
 
-func DeleteCard(userID, id int) error {
+func DeleteCard(id, userID int) error {
 	_, err := db.Exec(fmt.Sprintf("DELETE FROM cards WHERE id=%v AND uid=%v;", id, userID))
 	return err
 }
@@ -257,4 +258,241 @@ func DeleteChat(id, userID int) error {
 	}
 	_, err = db.Exec(fmt.Sprintf("DELETE FROM chat_users WHERE cid = %v;", id))
 	return err
+}
+
+func GetFiles(page, pageSize int) ([]File, error) {
+	files := make([]File, 0)
+	rows, err := db.Query(fmt.Sprintf("SELECT id,name,path,upload_timestamp FROM files LIMIT %v OFFSET %v;", pageSize, page*pageSize))
+	if err != nil {
+		return files, err
+	}
+	for rows.Next() {
+		var file File
+		err = rows.Scan(&file.ID, &file.Name, &file.Path, &file.UploadTimestamp)
+		if err != nil {
+			return files, err
+		}
+		files = append(files, file)
+	}
+	return files, err
+}
+
+func GetFile(id int) (File, error) {
+	var file File
+	rows, err := db.Query(fmt.Sprintf("SELECT id,name,path,upload_timestamp FROM files WHERE id=%v;", id))
+	if err != nil {
+		return file, err
+	}
+	for rows.Next() {
+		err = rows.Scan(&file.ID, &file.Name, &file.Path, &file.UploadTimestamp)
+		if err != nil {
+			return file, err
+		}
+	}
+	return file, err
+}
+
+func CreateFile(filename string) (int, error) {
+	result, err := db.Exec(fmt.Sprintf("INSERT INTO files (name, path, upload_timestamp) VALUES ('%v', '%v', %v);", filepath.Base(filename), filename, time.Now().Unix()))
+	if err != nil {
+		return 0, err
+	}
+	fid, err := result.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	return int(fid), err
+}
+
+func DeleteFile(id int) error {
+	_, err := db.Exec(fmt.Sprintf("DELETE FROM files WHERE id = %v;", id))
+	return err
+}
+
+func GetMessages(cid int) ([]Message, error) {
+	messages := make([]Message, 0)
+	rows, err := db.Query(fmt.Sprintf("SELECT id,cid,uid,message,timestamp FROM messages WHERE cid=%v;", cid))
+	defer rows.Close()
+	if err != nil {
+		return messages, err
+	}
+	for rows.Next() {
+		var message Message
+		err = rows.Scan(&message.ID, &message.CID, &message.UID, &message.Message, &message.Timestamp)
+		if err != nil {
+			return messages, err
+		}
+		messages = append(messages, message)
+	}
+	return messages, err
+}
+
+func CreateMessage(cid, uid int, message string) (int, error) {
+	result, err := db.Exec(fmt.Sprintf("INSERT INTO messages (cid, uid, message, timestamp) VALUES (%v, %v, '%v', %v);", cid, uid, message, time.Now().Unix()))
+	if err != nil {
+		return 0, err
+	}
+	mid, err := result.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	return int(mid), err
+}
+
+func UpdateMessage(mid, uid, cid int, message string) error {
+	_, err := db.Query(fmt.Sprintf("UPDATE messages SET message='%v' WHERE id=%v AND cid=%v AND uid=%v;", message, mid, cid, uid))
+	return err
+}
+
+func DeleteMessage(mid, uid, cid int) error {
+	_, err := db.Exec(fmt.Sprintf("DELETE FROM messages WHERE id = %v AND cid=%v AND uid=%v;", mid, cid, uid))
+	return err
+}
+
+func GetPosts(page, pageSize int) ([]Post, error) {
+	posts := make([]Post, 0)
+	rows, err := db.Query(fmt.Sprintf("SELECT id,uid,name,creation_timestamp FROM posts LIMIT %v OFFSET %v;", pageSize, page*pageSize))
+	defer rows.Close()
+	if err != nil {
+		return posts, err
+	}
+	for rows.Next() {
+		var post Post
+		err = rows.Scan(&post.ID, &post.UID, &post.Name, &post.CreationTimestamp)
+		if err != nil {
+			return posts, err
+		}
+		posts = append(posts, post)
+	}
+	return posts, nil
+}
+
+func GetPost(id int) (Post, error) {
+	var post Post
+	rows, err := db.Query(fmt.Sprintf("SELECT id,uid,content,name,creation_timestamp FROM posts WHERE id=%v;", id))
+	defer rows.Close()
+	if err != nil {
+		return post, err
+	}
+	for rows.Next() {
+		err = rows.Scan(&post.ID, &post.UID, &post.Content, &post.Name, &post.CreationTimestamp)
+		if err != nil {
+			return post, err
+		}
+	}
+	return post, nil
+}
+
+func UpdatePost(id, uid int, name, content string) error {
+	_, err := db.Query(fmt.Sprintf("UPDATE posts SET name='%v',content='%v' WHERE id=%v AND uid=%v;", name, content, id, uid))
+	return err
+}
+
+func DeletePost(id, uid int) error {
+	_, err := db.Exec(fmt.Sprintf("DELETE FROM posts WHERE id=%v AND uid=%v;", id, uid))
+	return err
+}
+
+func CreatePost(uid int, name, content string) (int, error) {
+	result, err := db.Exec(fmt.Sprintf("INSERT INTO posts (uid,name,content,creation_timestamp) VALUES (%v, '%v', '%v', %v);", uid, name, content, time.Now().Unix()))
+	if err != nil {
+		return 0, err
+	}
+	pid, err := result.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	return int(pid), nil
+}
+
+func GetTransactions(fromCard int, toCard int) ([]Transaction, error) {
+	transactions := make([]Transaction, 0)
+	rows, err := db.Query(fmt.Sprintf("SELECT * FROM transactions WHERE from_card=%v OR to_card=%v;", fromCard, toCard))
+	defer rows.Close()
+	if err != nil {
+		return transactions, err
+	}
+	for rows.Next() {
+		var transaction Transaction
+		err = rows.Scan(&transaction.ID, &transaction.FromCard, &transaction.ToCard, &transaction.Amount, &transaction.Comment, &transaction.Timestamp)
+		if err != nil {
+			return transactions, err
+		}
+		transactions = append(transactions, transaction)
+	}
+	return transactions, err
+}
+
+func GetTransaction(id, cid int) (Transaction, error) {
+	var transaction Transaction
+	rows, err := db.Query(fmt.Sprintf("SELECT * FROM transactions WHERE id=%v AND from_card=%v;", id, cid))
+	defer rows.Close()
+	if err != nil {
+		return transaction, err
+	}
+	for rows.Next() {
+		err = rows.Scan(&transaction.ID, &transaction.FromCard, &transaction.ToCard, &transaction.Amount, &transaction.Comment, &transaction.Timestamp)
+		if err != nil {
+			return transaction, err
+		}
+	}
+	return transaction, nil
+}
+
+func CreateTransaction(fcid, tcid int, amount float64, comment string) (int, error) {
+	//TODO fix transaction to non existable card
+	var fromCard Card
+	rows, err := db.Query(fmt.Sprintf("SELECT * FROM cards WHERE id=%v", fcid))
+	defer rows.Close()
+	for rows.Next() {
+		err = rows.Scan(&fromCard.ID, &fromCard.UID, &fromCard.Comment, &fromCard.Balance, &fromCard.CreationTimestamp, &fromCard.LastTransaction)
+		if err != nil {
+			return 0, err
+		}
+	}
+	var toCard Card
+	rows, err = db.Query(fmt.Sprintf("SELECT * FROM cards WHERE id=%v", tcid))
+	for rows.Next() {
+		err = rows.Scan(&toCard.ID, &toCard.UID, &toCard.Comment, &toCard.Balance, &toCard.CreationTimestamp, &toCard.LastTransaction)
+		if err != nil {
+			return 0, err
+		}
+	}
+	if fromCard.Balance-amount < 0 {
+		return 0, err
+	}
+	result, err := db.Exec(fmt.Sprintf("INSERT INTO transactions (from_card, to_card, amount, comment, timestamp) VALUES ('%v', '%v', %v, '%v', %v);", fcid, tcid, amount, comment, time.Now().Unix()))
+	if err != nil {
+		return 0, err
+	}
+	_, err = db.Query(fmt.Sprintf("UPDATE cards SET balance=%v WHERE id=%v;", fromCard.Balance-amount, fcid))
+	if err != nil {
+		return 0, err
+	}
+	_, err = db.Query(fmt.Sprintf("UPDATE cards SET balance=%v WHERE id=%v;", toCard.Balance+amount, tcid))
+	if err != nil {
+		return 0, err
+	}
+	tid, err := result.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	return int(tid), err
+}
+
+func GetUsers(page, pageSize int) ([]User, error) {
+	users := make([]User, 0)
+	rows, err := db.Query(fmt.Sprintf("SELECT id, first_name, second_name FROM users LIMIT %v OFFSET %v;", pageSize, page*pageSize))
+	if err != nil {
+		return users, err
+	}
+	for rows.Next() {
+		var user User
+		err = rows.Scan(&user.ID, &user.FirstName, &user.SecondName)
+		if err != nil {
+			return users, err
+		}
+		users = append(users, user)
+	}
+	return users, nil
 }

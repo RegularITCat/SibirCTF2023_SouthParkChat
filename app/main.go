@@ -15,12 +15,12 @@ var UserToCookieMap = make(map[string]string)
 
 func main() {
 	log.Println("Starting chat service...")
-	log.Println("Initializing database...")
-	db, _ = CreateDB(":memory:")
 	dbAddr, exists := os.LookupEnv("SOUTHPARKCHAT_DB_ADDR")
-	if exists {
-		db, _ = CreateDB(dbAddr)
+	if !exists {
+		dbAddr = ":memory:"
 	}
+	log.Printf("Initializing database in %v...", dbAddr)
+	db, _ = CreateDB(dbAddr)
 	log.Println("...done")
 	log.Println("Initializing router...")
 	router := mux.NewRouter()
@@ -43,9 +43,9 @@ func main() {
 	router.HandleFunc("/api/v1/chat/{cid:[0-9]+}/message/{mid:[0-9]+}", DeleteMessageHandler).Methods("DELETE")
 	router.HandleFunc("/api/v1/chat/{cid:[0-9]+}/message", CreateMessageHandler).Methods("POST")
 	router.HandleFunc("/api/v1/card", GetCardsHandler).Methods("GET")
-	router.HandleFunc("/api/v1/card/{id:[0-9]+}", GetCardHandler).Methods("GET")
-	router.HandleFunc("/api/v1/card/{id:[0-9]+}", UpdateCardHandler).Methods("PUT")
-	router.HandleFunc("/api/v1/card/{id:[0-9]+}", DeleteCardHandler).Methods("DELETE")
+	router.HandleFunc("/api/v1/card/{cid:[0-9]+}", GetCardHandler).Methods("GET")
+	router.HandleFunc("/api/v1/card/{cid:[0-9]+}", UpdateCardHandler).Methods("PUT")
+	router.HandleFunc("/api/v1/card/{cid:[0-9]+}", DeleteCardHandler).Methods("DELETE")
 	router.HandleFunc("/api/v1/card", CreateCardHandler).Methods("POST")
 	router.HandleFunc("/api/v1/card/{cid:[0-9]+}/transaction", GetTransactionsHandler).Methods("GET")
 	router.HandleFunc("/api/v1/card/{cid:[0-9]+}/transaction/{id:[0-9]+}", GetTransactionHandler).Methods("GET")

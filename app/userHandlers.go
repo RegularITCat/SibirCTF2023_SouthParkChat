@@ -7,18 +7,13 @@ import (
 )
 
 func GetUsersHandler(w http.ResponseWriter, r *http.Request) {
-	var users []User
-	rows, err := db.Query("SELECT id, first_name, second_name FROM users;")
+	page, pageSize, err := parseFormPageParams(r)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
-	for rows.Next() {
-		var user User
-		err = rows.Scan(&user.ID, &user.FirstName, &user.SecondName)
-		if err != nil {
-			printError(w, r, err, http.StatusInternalServerError)
-		}
-		users = append(users, user)
+	users, err := GetUsers(page, pageSize)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	result, err := json.Marshal(users)
 	if err != nil {
@@ -32,16 +27,6 @@ func GetUserHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := GetUserByCookie(r)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
-	}
-	rows, err := db.Query(fmt.Sprintf("SELECT * FROM users WHERE id = %v", user.ID))
-	if err != nil {
-		printError(w, r, err, http.StatusInternalServerError)
-	}
-	for rows.Next() {
-		err = rows.Scan(&user.ID, &user.Login, &user.Password, &user.FirstName, &user.SecondName, &user.RegistrationTimestamp, &user.LoginTimestamp, &user.Status)
-		if err != nil {
-			printError(w, r, err, http.StatusInternalServerError)
-		}
 	}
 	result, err := json.Marshal(user)
 	if err != nil {

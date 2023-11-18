@@ -31,12 +31,19 @@ func GetCardHandler(w http.ResponseWriter, r *http.Request) {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
 	vars := mux.Vars(r)
-	id, _ := strconv.Atoi(vars["id"])
-	if !CheckCardOwner(r) {
-		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
-		return
+	//log.Println(vars["id"])
+	cid, err := strconv.Atoi(vars["cid"])
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
 	}
-	card, err := GetCardByUserIDAndID(user.ID, id)
+	ownerOk, err := CheckCardOwner(r)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
+	if !ownerOk {
+		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+	}
+	card, err := GetCardByUserIDAndID(user.ID, cid)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
@@ -73,17 +80,20 @@ func UpdateCardHandler(w http.ResponseWriter, r *http.Request) {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
 	vars := mux.Vars(r)
-	id := vars["id"]
-	if !CheckCardOwner(r) {
+	cid := vars["cid"]
+	ownerOk, err := CheckCardOwner(r)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
+	if !ownerOk {
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
-		return
 	}
 	var tmp Card
 	err = json.NewDecoder(r.Body).Decode(&tmp)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
-	tmp.ID, err = strconv.Atoi(id)
+	tmp.ID, err = strconv.Atoi(cid)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
@@ -100,11 +110,11 @@ func DeleteCardHandler(w http.ResponseWriter, r *http.Request) {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
 	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
+	cid, err := strconv.Atoi(vars["cid"])
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
-	err = DeleteCard(id, user.ID)
+	err = DeleteCard(cid, user.ID)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}

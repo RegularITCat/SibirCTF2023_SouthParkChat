@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -16,19 +15,11 @@ import (
 //do i really need files in service?
 
 func GetFilesHandler(w http.ResponseWriter, r *http.Request) {
-	files := make([]File, 0)
-	rows, err := db.Query("SELECT id,name,path,upload_timestamp FROM files;")
+	page, pageSize, err := parseFormPageParams(r)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
-	for rows.Next() {
-		var file File
-		err = rows.Scan(&file.ID, &file.Name, &file.Path, &file.UploadTimestamp)
-		if err != nil {
-			printError(w, r, err, http.StatusInternalServerError)
-		}
-		files = append(files, file)
-	}
+	files, err := GetFiles(page, pageSize)
 	result, err := json.Marshal(files)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
@@ -39,17 +30,13 @@ func GetFilesHandler(w http.ResponseWriter, r *http.Request) {
 
 func GetFileHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id := vars["id"]
-	rows, err := db.Query(fmt.Sprintf("SELECT id,name,path,upload_timestamp FROM files WHERE id=%v;", id))
+	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
-	var file File
-	for rows.Next() {
-		err = rows.Scan(&file.ID, &file.Name, &file.Path, &file.UploadTimestamp)
-		if err != nil {
-			printError(w, r, err, http.StatusInternalServerError)
-		}
+	file, err := GetFile(id)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	result, err := json.Marshal(file)
 	if err != nil {
@@ -74,11 +61,7 @@ func UploadFileHandler(w http.ResponseWriter, r *http.Request) {
 	if _, err := io.Copy(dst, file); err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
-	result, err := db.Exec(fmt.Sprintf("INSERT INTO files (name, path, upload_timestamp) VALUES ('%v', '%v', %v);", filepath.Base(handler.Filename), handler.Filename, time.Now().Unix()))
-	if err != nil {
-		printError(w, r, err, http.StatusInternalServerError)
-	}
-	fid, err := result.LastInsertId()
+	fid, err := CreateFile(handler.Filename)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
@@ -97,17 +80,13 @@ func UploadFileHandler(w http.ResponseWriter, r *http.Request) {
 
 func DownloadFileHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id := vars["id"]
-	rows, err := db.Query(fmt.Sprintf("SELECT id,name,path,upload_timestamp FROM files WHERE id=%v;", id))
+	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
-	var file File
-	for rows.Next() {
-		err = rows.Scan(&file.ID, &file.Name, &file.Path, &file.UploadTimestamp)
-		if err != nil {
-			printError(w, r, err, http.StatusInternalServerError)
-		}
+	file, err := GetFile(id)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	fileDescriptor, err := os.Open(file.Path)
 	defer fileDescriptor.Close()
@@ -124,23 +103,19 @@ func DownloadFileHandler(w http.ResponseWriter, r *http.Request) {
 
 func DeleteFileHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id := vars["id"]
-	rows, err := db.Query(fmt.Sprintf("SELECT id,name,path,upload_timestamp FROM files WHERE id=%v;", id))
+	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
-	var file File
-	for rows.Next() {
-		err = rows.Scan(&file.ID, &file.Name, &file.Path, &file.UploadTimestamp)
-		if err != nil {
-			printError(w, r, err, http.StatusInternalServerError)
-		}
+	file, err := GetFile(id)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
 	}
 	err = os.Remove(file.Path)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
-	_, err = db.Exec(fmt.Sprintf("DELETE FROM files WHERE id = %v;", id))
+	err = DeleteFile(id)
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
