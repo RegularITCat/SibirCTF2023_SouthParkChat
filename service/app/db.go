@@ -34,7 +34,7 @@ func CreateDB(path string) (*sql.DB, error) {
 	timestamp := time.Now().Unix()
 	if count == 0 {
 		_, _ = sqlDB.Exec(
-			fmt.Sprintf("INSERT INTO chats (id, name, description, created_timestamp) VALUES (0, '%v', '%v', '%v');", "general", "general chat", timestamp),
+			fmt.Sprintf("INSERT INTO chats (id, name, description, created_timestamp, admin_id) VALUES (0, '%v', '%v', '%v', '%v');", "general", "general chat", timestamp, 0),
 		)
 	}
 	rows, err = sqlDB.Query("SELECT count(*) FROM users WHERE id=0;")
@@ -97,7 +97,7 @@ func CreateUser(login, password, firstName, secondName string) error {
 	}
 	insertChatUsersSQL := fmt.Sprintf(
 		"INSERT INTO chat_users (cid, uid, entry_timestamp) VALUES ('%v', '%v', '%v');",
-		1,
+		0,
 		uid,
 		timestamp,
 	)
