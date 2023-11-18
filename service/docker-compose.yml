@@ -9,7 +9,7 @@ services:
       - "8888:8888/tcp"
     environment:
       - SOUTHPARKCHAT_ADDR=0.0.0.0:8888
-      - SOUTHPARKCHAT_DB_ADDR=/data/chat/tmp.db
+      - SOUTHPARKCHAT_DB_ADDR=/data/tmp.db
     volumes:
       - ./data/:/data
     healthcheck:
