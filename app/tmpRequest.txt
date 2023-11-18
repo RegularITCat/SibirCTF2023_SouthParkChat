@@ -1,9 +1,0 @@
-POST /api/v1/file HTTP/1.1
-Host: localhost:8888
-User-Agent: curl/7.81.0
-Accept: */*
-Cookie: token=$2a$04$AsxEb/4rPRHTyKZyn.Zs8umGvutPJyOvw0UtoctcENTy.PkFnXsxW
-Content-Length: 194
-Content-Type: multipart/form-data; boundary=------------------------44a17841d3d5ed9d
-
-
