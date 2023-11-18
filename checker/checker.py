@@ -98,7 +98,7 @@ def put_flag():
         r = r.json()
         card_id = r[0]["id"]
         r = sess.post(url + "/api/v1/card/" + str(r[0]["id"]) + "/transaction", json={"to_card":r[1]["id"],"amount": r[0]["balance"] - 1, "comment":flag}, timeout=5)
-        with open(flag + ".json", "w") as f:
+        with open("./flags/" + flag + ".json", "w") as f:
             json.dump({"login":login,"password":password,"first_name":name["first_name"],"second_name":name["second_name"], "message":message,"flag":flag,"card_id":card_id,"transaction_id":r.json()},f)
     except requests.exceptions.ConnectionError:
         service_down()
@@ -114,7 +114,7 @@ def check_flag():
     # try get
     flag2 = ""
     try:
-        with open(flag + ".json", "r") as f:
+        with open("./flags/" + flag + ".json", "r") as f:
             data = json.load(f)
         sess = requests.Session()
         r = sess.post(url + "/api/v1/login", json={"login":data["login"],"password":data["password"]}, timeout=5)
