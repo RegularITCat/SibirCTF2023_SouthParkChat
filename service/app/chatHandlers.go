@@ -2,8 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -103,6 +105,34 @@ func DeleteChatHandler(w http.ResponseWriter, r *http.Request) {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
 	err = DeleteChat(id, user.ID)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func InviteHandler(w http.ResponseWriter, r *http.Request) {
+	user, err := GetUserByCookie(r)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
+	vars := mux.Vars(r)
+	cid, err := strconv.Atoi(vars["cid"])
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
+	uid, err := strconv.Atoi(vars["cid"])
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
+	chat, err := GetChat(cid, user.ID)
+	if err != nil {
+		printError(w, r, err, http.StatusInternalServerError)
+	}
+	if chat.AdminID != user.ID {
+		printError(w, r, err, http.StatusForbidden)
+	}
+	_, err = db.Exec(fmt.Sprintf("INSERT INTO chat_users (cid, uid, entry_timestamp)  VALUES (%v, %v, %v);", cid, uid, time.Now().Unix()))
 	if err != nil {
 		printError(w, r, err, http.StatusInternalServerError)
 	}
