@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/gorilla/mux"
 )
@@ -18,6 +19,14 @@ func main() {
 	dbAddr, exists := os.LookupEnv("SOUTHPARKCHAT_DB_ADDR")
 	if !exists {
 		dbAddr = ":memory:"
+	} else {
+		_, err := os.Stat(dbAddr)
+		if os.IsNotExist(err) {
+			errDir := os.MkdirAll(filepath.Dir(dbAddr), 0755)
+			if errDir != nil {
+				log.Fatal(err)
+			}
+		}
 	}
 	log.Printf("Initializing database in %v...", dbAddr)
 	db, _ = CreateDB(dbAddr)
